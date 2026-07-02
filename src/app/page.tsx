@@ -57,9 +57,19 @@ const TOOLS = [
   },
 ];
 
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ notfound?: string }>;
+}) {
+  const { notfound } = await searchParams;
   return (
     <div>
+      {notfound && (
+        <p className="mb-6 rounded-[8px] border border-border bg-surface px-4 py-3 text-sm text-muted">
+          That short link doesn’t exist (or expired).
+        </p>
+      )}
       <section className="mb-10 text-center sm:mb-14 sm:text-left">
         <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
           QR codes and a link page, made simple.

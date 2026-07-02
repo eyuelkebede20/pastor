@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCanvas, type QRCanvasHandle } from "@/components/QRCanvas";
+import { CopyButton } from "@/components/CopyButton";
 import { Label } from "@/components/ui";
+import { createShortLink } from "@/actions/shortlinks";
 import {
   vcardString,
   wifiString,
@@ -43,11 +45,16 @@ export function QRGenerator() {
   const [busy, setBusy] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // Shorten & get QR (anonymous-friendly).
+  const [shortened, setShortened] = useState<{ shortUrl: string } | null>(null);
+  const [shortenBusy, setShortenBusy] = useState(false);
+  const [shortenError, setShortenError] = useState<string | null>(null);
+
   // Raw content string for the active tab.
   const rawData = useMemo(() => {
     switch (tab) {
       case "url":
-        return url.trim();
+        return shortened ? shortened.shortUrl : url.trim();
       case "text":
         return text;
       case "wifi":
@@ -57,7 +64,24 @@ export function QRGenerator() {
           ? vcardString(vcard)
           : "";
     }
-  }, [tab, url, text, wifi, vcard]);
+  }, [tab, url, text, wifi, vcard, shortened]);
+
+  async function shorten() {
+    setShortenError(null);
+    setShortenBusy(true);
+    try {
+      const res = await createShortLink({ url: url.trim() });
+      if (res.ok) {
+        setShortened({ shortUrl: res.shortUrl });
+      } else {
+        setShortenError(res.error);
+      }
+    } catch {
+      setShortenError("Couldn't shorten that link. Please try again.");
+    } finally {
+      setShortenBusy(false);
+    }
+  }
 
   // Debounce the content feeding the preview (150ms).
   const [debouncedData, setDebouncedData] = useState(rawData);
@@ -135,9 +159,48 @@ export function QRGenerator() {
                 inputMode="url"
                 placeholder="https://example.com"
                 value={url}
-                onChange={(e) => setUrl(e.target.value)}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  setShortened(null);
+                  setShortenError(null);
+                }}
                 className={inputCls}
               />
+
+              {shortened ? (
+                <div className="mt-3 rounded-[8px] border border-border bg-bg p-3">
+                  <p className="text-xs text-muted">Short link</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="min-w-0 flex-1 truncate font-mono text-sm">
+                      {shortened.shortUrl}
+                    </span>
+                    <CopyButton value={shortened.shortUrl} />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShortened(null)}
+                    className="mt-2 text-xs font-medium text-muted hover:text-ink"
+                  >
+                    Use the original link instead
+                  </button>
+                </div>
+              ) : (
+                url.trim().length > 0 && (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={shorten}
+                      disabled={shortenBusy}
+                      className="text-sm font-medium text-accent hover:underline disabled:opacity-50"
+                    >
+                      {shortenBusy ? "Shortening…" : "Shorten & get QR"}
+                    </button>
+                    {shortenError && (
+                      <p className="mt-1 text-sm text-danger">{shortenError}</p>
+                    )}
+                  </div>
+                )
+              )}
             </div>
           )}
 
