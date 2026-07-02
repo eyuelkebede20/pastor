@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --ink: #16181d;
+  --muted: #6b7280;
+  --accent: #0e7c66;
+  --accent-ink: #ffffff;
+  --danger: #c2402a;
+  --border: #e5e5e0;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
+  --color-border: var(--border);
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Visible focus rings (accessibility floor) */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Signature element: a 3x3 QR finder-square glyph before section headings.
+   Concentric squares: accent ring | white gap | accent center dot. */
+.finder::before {
+  content: "";
+  display: inline-block;
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+  background: var(--accent);
+  border: 2px solid var(--accent);
+  box-shadow: inset 0 0 0 2px var(--surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
