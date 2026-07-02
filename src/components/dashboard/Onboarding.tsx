@@ -23,14 +23,17 @@ export function Onboarding({ suggestedName }: { suggestedName: string }) {
   const [busy, setBusy] = useState(false);
   const seq = useRef(0);
 
-  // Debounced live availability check.
+  function onUsernameChange(value: string) {
+    const next = value.toLowerCase();
+    setUsername(next);
+    setAvail(next.trim() ? { state: "checking" } : { state: "idle" });
+  }
+
+  // Debounced live availability check. Only the async result is written here,
+  // so no state is set synchronously during the effect.
   useEffect(() => {
     const value = username.trim();
-    if (!value) {
-      setAvail({ state: "idle" });
-      return;
-    }
-    setAvail({ state: "checking" });
+    if (!value) return;
     const id = ++seq.current;
     const t = setTimeout(async () => {
       const res = await checkUsername(value);
@@ -71,7 +74,7 @@ export function Onboarding({ suggestedName }: { suggestedName: string }) {
             <input
               id="username"
               value={username}
-              onChange={(e) => setUsername(e.target.value.toLowerCase())}
+              onChange={(e) => onUsernameChange(e.target.value)}
               placeholder="yourname"
               autoCapitalize="none"
               autoComplete="off"
