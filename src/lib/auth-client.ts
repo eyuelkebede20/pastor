@@ -1,7 +1,9 @@
 "use client";
 
-// Replaced with the real better-auth client in Phase 3. Kept as a thin stub so
-// the nav's auth menu compiles before auth exists.
-export const authClient = {
-  async signOut() {},
-};
+import { createAuthClient } from "better-auth/react";
+
+// baseURL is omitted so the client uses the current origin — correct in both
+// local dev and on the Vercel deployment.
+export const authClient = createAuthClient();
+
+export const { signIn, signUp, signOut, useSession } = authClient;
