@@ -1,12 +1,30 @@
 # Getting Pastor online
 
-## Progress so far
+## ✅ LIVE — https://pastor-sepia.vercel.app
+
 - [x] **Code on GitHub** — https://github.com/eyuelkebede20/pastor (public)
 - [x] **Database provisioned + migrated** — Neon schema applied, all 7 tables live
-- [x] **End-to-end verified** against the real DB: signup → profile → add link →
-      public page → `/r/` redirect → click counting all work. Test data cleaned.
-- [ ] **Deploy to Vercel** — blocked: the provided token (`vck_…`) returns
-      `You are not authorized`. Need a valid token OR a 3-click dashboard import.
+- [x] **End-to-end verified** locally: signup → profile → add link → public page →
+      `/r/` redirect → click counting. Test data cleaned.
+- [x] **Deployed to Vercel** — project `eyuduc-1714s-projects/pastor`, framework
+      set to Next.js, deployment protection disabled, env vars set
+      (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL`).
+- [x] **Live smoke test passed** — signup on prod returns 200, OG image renders.
+
+### 🔒 Do this now — rotate the exposed secrets
+These were shared in plaintext (chat + `.env`). None reached the public repo, but
+rotate them to be safe:
+- [ ] GitHub classic token `ghp_…` → https://github.com/settings/tokens (revoke)
+- [ ] Neon password → Neon dashboard → Reset password, then update `DATABASE_URL`
+      in Vercel (all envs) and `.env`.
+- [ ] Vercel token `vcp_…` → https://vercel.com/account/settings/tokens (revoke
+      when you no longer need CLI deploys).
+
+### Optional next
+- [ ] Add a custom domain (Vercel → Settings → Domains), then update
+      `BETTER_AUTH_URL` / `NEXT_PUBLIC_APP_URL` to it and redeploy.
+- [ ] Auto-deploy on push: connect the GitHub repo in the Vercel project
+      (Settings → Git) so `git push` deploys automatically.
 
 ### Finish the deploy — pick ONE
 
