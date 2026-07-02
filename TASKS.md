@@ -7,15 +7,27 @@ browser. Total time: ~15 minutes.
 
 ---
 
-## Part A — Code to GitHub  **[ME, with your OK]**
+## Part A — Code to GitHub  **[YOU — 30 seconds]**
 
-`gh` is already logged in as `eyuelkebede20`. I can run this for you:
+The public repo **already exists**: https://github.com/eyuelkebede20/pastor
+(but it's empty — the push was blocked because your `gh` token is a
+fine-grained PAT without push access to new repos).
 
-```bash
-gh repo create pastor --private --source=. --remote=origin --push
+**Fix: re-authenticate `gh` with push scope.** In the Claude prompt, run this
+with the `!` prefix so it runs in this session:
+
+```
+!gh auth login --web -h github.com -s repo -s workflow
 ```
 
-- [ ] Decide **private** or **public**, then let me create + push (or run it yourself).
+- Choose **HTTPS** when asked.
+- It shows a one-time code and opens your browser → paste the code → Authorize.
+
+Then tell me "auth fixed" and I'll push (or run it yourself):
+
+```bash
+git -c credential.helper='!gh auth git-credential' push -u origin main
+```
 
 ---
 
@@ -37,7 +49,23 @@ auto-injects `DATABASE_URL` into all environments. Then skip to Part C.
 
 ---
 
-## Part C — Deploy to Vercel  **[YOU — browser login]**
+## Part B.5 — Get a Vercel API token (so I can deploy for you)  **[YOU — 1 min]**
+
+1. [ ] If you don't have a Vercel account: sign up at https://vercel.com/signup
+       (use **Continue with GitHub** — fastest).
+2. [ ] Go to https://vercel.com/account/settings/tokens
+3. [ ] **Create Token** → name it `pastor-deploy` → Scope: your account →
+       Expiration: your choice (e.g. 30 days) → **Create**.
+4. [ ] Copy the token (shown only once) and paste it to me in chat.
+
+With that token **plus** a `DATABASE_URL` (Part B), I can run the deploy from
+here via the Vercel CLI — no dashboard clicking needed. I'll set the env vars
+and deploy. (Secrets you paste are used for the deploy only and never committed;
+`.env*` is gitignored.)
+
+---
+
+## Part C — Deploy to Vercel  **[YOU — browser login, OR let me use the token above]**
 
 1. [ ] `vercel login` (opens the browser once).
 2. [ ] Import the repo at https://vercel.com/new → it auto-detects Next.js.
