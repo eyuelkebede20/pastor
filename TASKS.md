@@ -1,9 +1,31 @@
 # Getting Pastor online
 
-The app is fully built, committed on `main`, and passes build + typecheck + lint.
-What's left is infrastructure: a database, a host, and env vars. Below, **[ME]**
-= things I can do from here, **[YOU]** = things that need your account or a
-browser. Total time: ~15 minutes.
+## Progress so far
+- [x] **Code on GitHub** — https://github.com/eyuelkebede20/pastor (public)
+- [x] **Database provisioned + migrated** — Neon schema applied, all 7 tables live
+- [x] **End-to-end verified** against the real DB: signup → profile → add link →
+      public page → `/r/` redirect → click counting all work. Test data cleaned.
+- [ ] **Deploy to Vercel** — blocked: the provided token (`vck_…`) returns
+      `You are not authorized`. Need a valid token OR a 3-click dashboard import.
+
+### Finish the deploy — pick ONE
+
+**Option 1 — Dashboard import (easiest, no token needed; code is already on GitHub)**
+1. Go to https://vercel.com/new and import `eyuelkebede20/pastor`.
+2. Before deploying, add env vars (Settings → Environment Variables):
+   `DATABASE_URL` (your Neon pooled string), `BETTER_AUTH_SECRET`,
+   `BETTER_AUTH_URL` = your prod URL, `NEXT_PUBLIC_APP_URL` = same prod URL.
+   (Or add the Neon Marketplace integration to auto-inject `DATABASE_URL`.)
+3. Deploy. `vercel.json` migrates automatically before build.
+
+**Option 2 — Give me a working token and I deploy from here**
+1. https://vercel.com/account/settings/tokens → **Create Token** → copy the WHOLE value.
+2. Replace `VERCELkEY=` in `.env` with it (or paste in chat).
+3. Tell me — I'll set env vars + deploy via CLI.
+
+---
+
+_Original checklist below (kept for reference)._
 
 ---
 
