@@ -8,6 +8,8 @@ export const RESERVED_USERNAMES = new Set([
   "api",
   "u",
   "r",
+  "c",
+  "cards",
   "admin",
   "og",
 ]);

@@ -2,6 +2,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -106,3 +107,56 @@ export const shortLinks = pgTable("short_links", {
   clicks: integer("clicks").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// ── vCards feature ──────────────────────────────────────────────────────────
+// companies: a group / order owned by a user (e.g. one client per company)
+export const companies = pgTable(
+  "companies",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 80 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [index("companies_user_idx").on(t.userId)],
+);
+
+// card_fields: the columns/fields defined per company
+export const cardFields = pgTable(
+  "card_fields",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    label: varchar("label", { length: 40 }).notNull(),
+    type: varchar("type", { length: 24 }).notNull(), // registry key or 'custom'
+    icon: varchar("icon", { length: 16 }), // emoji, used when type = 'custom'
+    position: integer("position").notNull(),
+  },
+  (t) => [index("card_fields_company_idx").on(t.companyId)],
+);
+
+// cards: one person (a row), rendered as a public virtual ID at /c/[publicId]
+export const cards = pgTable(
+  "cards",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    publicId: varchar("public_id", { length: 16 }).notNull().unique(), // nanoid
+    fullName: varchar("full_name", { length: 80 }).notNull(),
+    title: varchar("title", { length: 80 }),
+    // fieldId -> value
+    values: jsonb("values")
+      .$type<Record<string, string>>()
+      .notNull()
+      .default({}),
+    position: integer("position").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [index("cards_company_idx").on(t.companyId)],
+);

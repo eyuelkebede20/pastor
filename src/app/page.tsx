@@ -33,6 +33,17 @@ function LinkIcon() {
   );
 }
 
+function CardIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Zm2 0v12h14V6H5Zm2 3h4v2H7V9Zm0 4h6v2H7v-2Zm8-4h2v2h-2V9Zm0 4h2v2h-2v-2Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 const TOOLS = [
   {
     href: "/qr/generate",
@@ -54,6 +65,13 @@ const TOOLS = [
     body: "One simple page for all your links, with a matching QR code and a short shareable URL.",
     cta: "Build your page",
     icon: <LinkIcon />,
+  },
+  {
+    href: "/cards",
+    title: "vCards",
+    body: "A grid of people per company. Give each one a scannable virtual ID and a downloadable QR.",
+    cta: "Manage cards",
+    icon: <CardIcon />,
   },
 ];
 
@@ -80,7 +98,7 @@ export default async function Home({
         </p>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {TOOLS.map((tool) => (
           <Link
             key={tool.href}

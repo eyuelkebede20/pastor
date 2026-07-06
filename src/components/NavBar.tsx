@@ -10,6 +10,7 @@ const TABS = [
   { href: "/qr/generate", label: "Generate" },
   { href: "/qr/scan", label: "Scan" },
   { href: "/links", label: "My Links" },
+  { href: "/cards", label: "vCards" },
 ];
 
 function FinderMark() {
@@ -29,7 +30,7 @@ export function NavBar({ user }: { user: SessionUser | null }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-surface/90 backdrop-blur">
-      <nav className="mx-auto flex w-full max-w-3xl items-center gap-4 px-4 py-3">
+      <nav className="mx-auto flex w-full max-w-5xl items-center gap-4 px-4 py-3">
         <Link
           href="/"
           className="flex items-center gap-2 font-display text-lg font-bold tracking-tight"
