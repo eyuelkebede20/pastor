@@ -2,6 +2,13 @@
 
 ## ✅ LIVE — https://pastor-sepia.vercel.app
 
+### Feature added: vCards (digital ID cards)
+- Dashboard at `/cards`: companies → an editable grid of people, columns with
+  builtin/custom icons, per-row Download SVG + Copy link + Open.
+- Public virtual ID at `/c/{id}` with Save-to-contacts (.vcf), QR, and OG preview.
+- Verified end-to-end against the live DB; shipped to production.
+
+
 - [x] **Code on GitHub** — https://github.com/eyuelkebede20/pastor (public)
 - [x] **Database provisioned + migrated** — Neon schema applied, all 7 tables live
 - [x] **End-to-end verified** locally: signup → profile → add link → public page →
