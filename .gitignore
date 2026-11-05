@@ -40,6 +40,14 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# cPanel build staging & archives
+dist-cpanel/
+deploy/
+pastor-cpanel-bundle.zip
+.ftp-deploy-sync-state.json
+logs/
+startup-error.log
+
 # local env
 .env
 .env*.local
