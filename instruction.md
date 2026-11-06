@@ -146,6 +146,7 @@ A production bundle has been generated locally:
 #### On-Disk Layout Verification:
 ```text
 /home/<username>/api/pastor/
+├── package.json                <-- Exposes scripts (start, restart, etc.) to cPanel UI
 ├── app.cjs                     <-- Passenger bootstrap shim
 ├── app.js                      <-- Bridge forwarding to app.cjs
 ├── .htaccess                   <-- CloudLinux Passenger configuration

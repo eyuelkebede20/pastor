@@ -67,6 +67,7 @@ A pre-packaged archive is ready:
 
 ```text
 api/pastor/                      ← Application Root (CloudLinux node_modules symlink safely isolated)
+├── package.json                 ← Exposes scripts (start, restart, etc.) to cPanel UI
 ├── app.cjs                      ← Application startup file (boots app/server.js)
 ├── app.js                       ← Fallback bridge to app.cjs
 ├── tmp/restart.txt              ← Touch to restart Phusion Passenger

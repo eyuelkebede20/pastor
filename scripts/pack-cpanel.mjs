@@ -223,6 +223,23 @@ fs.writeFileSync(path.join(rootAppDir, '.env.example'), envExample, 'utf8');
 fs.writeFileSync(path.join(rootDir, 'app.cjs'), appCjs, 'utf8');
 fs.writeFileSync(path.join(rootDir, 'app.js'), appJs, 'utf8');
 
+// Write root package.json so cPanel Node.js Selector discovers scripts in the dashboard
+const projectPkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
+const rootPkg = {
+  name: projectPkg.name || 'pastor',
+  version: projectPkg.version || '0.1.0',
+  private: true,
+  main: 'app.cjs',
+  scripts: {
+    start: 'node app.cjs',
+    restart: 'touch tmp/restart.txt',
+    ...projectPkg.scripts,
+    start: 'node app.cjs'
+  },
+  dependencies: projectPkg.dependencies || {}
+};
+fs.writeFileSync(path.join(rootAppDir, 'package.json'), JSON.stringify(rootPkg, null, 2), 'utf8');
+
 // 7. Create unified Zip Archive
 console.log('🗜️ Creating unified zip archive: pastor-cpanel-bundle.zip using tar...');
 if (fs.existsSync(zipFile)) {
@@ -244,6 +261,7 @@ Folder:  dist-cpanel/pastor/
 
 On-disk layout inside api/pastor/:
   api/pastor/                     ◄── Application Root (CloudLinux node_modules symlink safely isolated)
+  ├── package.json                ◄── Discovered by cPanel Node.js Selector for npm scripts
   ├── app.cjs                     ◄── Application startup file (boots ./app/server.js)
   ├── app.js                      ◄── Fallback bridge to app.cjs
   ├── tmp/restart.txt             ◄── Touch to restart Passenger
