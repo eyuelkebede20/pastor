@@ -70,4 +70,5 @@ jobs:
             **/logs/**
             **/*.map
             **/*.md
+            **/.lock
             ${{ (inputs.sync_node_modules == true || inputs.sync_node_modules == 'true') && '# allow node_modules' || 'app/node_modules/**' }}
