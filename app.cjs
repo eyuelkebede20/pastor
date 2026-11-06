@@ -5,6 +5,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'production';
+process.env.NODE_OPTIONS = process.env.NODE_OPTIONS || '--disable-wasm-trap-handler';
 process.env.HOSTNAME = '0.0.0.0';
 
 const appDir = path.resolve(__dirname, 'app');
@@ -29,13 +30,22 @@ try {
 process.env.NODE_PATH = candidatePaths.concat(process.env.NODE_PATH || '').filter(Boolean).join(path.delimiter);
 require('node:module').Module._initPaths();
 
-// 2. Ensure logs and tmp exist
+// 2. Switch working directory to app/ so relative paths and process.cwd() resolve cleanly
+try {
+  if (fs.existsSync(appDir)) {
+    process.chdir(appDir);
+  }
+} catch (e) {
+  console.warn('Could not chdir to app directory:', e);
+}
+
+// 3. Ensure logs and tmp exist
 const logsDir = path.join(__dirname, 'logs');
 const tmpDir = path.join(__dirname, 'tmp');
 try { if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true }); } catch (_) {}
 try { if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true }); } catch (_) {}
 
-// 3. Load environment variables from root .env or app/.env (zero dependency parser)
+// 4. Load environment variables from root .env or app/.env (zero dependency parser)
 function loadEnvFile(envPath) {
   if (!fs.existsSync(envPath)) return;
   try {
@@ -63,11 +73,18 @@ function loadEnvFile(envPath) {
 loadEnvFile(path.join(__dirname, '.env'));
 loadEnvFile(path.join(appDir, '.env'));
 
-// 4. Default URLs for pastor.senaycreatives.com if not provided
+// 5. Default URLs for pastor.senaycreatives.com if not provided
 process.env.NEXT_PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pastor.senaycreatives.com';
 process.env.BETTER_AUTH_URL = process.env.BETTER_AUTH_URL || 'https://pastor.senaycreatives.com';
 
-// 5. Boot the Next.js standalone server with startup error boundary
+// Normalize @localhost to @127.0.0.1 so cPanel PostgreSQL does not attempt IPv6 (::1) which lacks pg_hba.conf entry
+if (process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL
+    .replace('@localhost:', '@127.0.0.1:')
+    .replace('@localhost/', '@127.0.0.1/');
+}
+
+// 6. Boot the Next.js standalone server with startup error boundary
 try {
   const entryCandidates = [
     path.join(appDir, 'server.js'),
