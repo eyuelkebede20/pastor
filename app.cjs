@@ -45,6 +45,22 @@ const tmpDir = path.join(__dirname, 'tmp');
 try { if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true }); } catch (_) {}
 try { if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true }); } catch (_) {}
 
+process.on('uncaughtException', (err) => {
+  try {
+    const errorLog = path.join(logsDir, 'startup-error.log');
+    fs.appendFileSync(errorLog, '[ ' + new Date().toISOString() + ' ] Uncaught Exception:\n' + (err.stack || err) + '\n', 'utf8');
+  } catch (_) {}
+  console.error('[Uncaught Exception]', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  try {
+    const errorLog = path.join(logsDir, 'startup-error.log');
+    fs.appendFileSync(errorLog, '[ ' + new Date().toISOString() + ' ] Unhandled Rejection:\n' + ((reason && reason.stack) || reason) + '\n', 'utf8');
+  } catch (_) {}
+  console.error('[Unhandled Rejection]', reason);
+});
+
 // 4. Load environment variables from root .env or app/.env (zero dependency parser)
 function loadEnvFile(envPath) {
   if (!fs.existsSync(envPath)) return;
