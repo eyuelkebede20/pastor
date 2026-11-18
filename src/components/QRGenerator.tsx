@@ -1,13 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { QRCanvas, type QRCanvasHandle } from "@/components/QRCanvas";
 import { CopyButton } from "@/components/CopyButton";
 import { Label } from "@/components/ui";
 import { createShortLink } from "@/actions/shortlinks";
 import {
+  COLOR_SCHEMES,
+  SUGGESTED_LOGOS,
   vcardString,
   wifiString,
+  type CornerDotStyle,
+  type CornerSquareStyle,
   type DotStyle,
   type QrConfig,
 } from "@/lib/qr";
@@ -27,6 +32,7 @@ const inputCls =
 export function QRGenerator() {
   const [tab, setTab] = useState<Tab>("url");
 
+  // Content state
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [wifi, setWifi] = useState({
@@ -34,11 +40,25 @@ export function QRGenerator() {
     password: "",
     encryption: "WPA" as "WPA" | "WEP" | "nopass",
   });
-  const [vcard, setVcard] = useState({ name: "", phone: "", email: "" });
+  const [vcard, setVcard] = useState({
+    name: "",
+    title: "",
+    company: "",
+    phone: "",
+    email: "",
+    website: "",
+    address: "",
+    note: "",
+  });
 
-  const [fgColor, setFgColor] = useState("#111111");
+  // Customization state (inspired by ass.html)
+  const [fgColor, setFgColor] = useState("#6594FF");
   const [bgColor, setBgColor] = useState("#FFFFFF");
+  const [isTransparentBg, setIsTransparentBg] = useState(false);
   const [dotStyle, setDotStyle] = useState<DotStyle>("square");
+  const [cornerSquareStyle, setCornerSquareStyle] =
+    useState<CornerSquareStyle>("square");
+  const [cornerDotStyle, setCornerDotStyle] = useState<CornerDotStyle>("square");
   const [logo, setLogo] = useState<string | undefined>(undefined);
 
   const canvasRef = useRef<QRCanvasHandle>(null);
@@ -91,8 +111,26 @@ export function QRGenerator() {
   }, [rawData]);
 
   const config: QrConfig = useMemo(
-    () => ({ data: debouncedData, fgColor, bgColor, dotStyle, logo }),
-    [debouncedData, fgColor, bgColor, dotStyle, logo],
+    () => ({
+      data: debouncedData,
+      fgColor,
+      bgColor,
+      isTransparentBg,
+      dotStyle,
+      cornerSquareStyle,
+      cornerDotStyle,
+      logo,
+    }),
+    [
+      debouncedData,
+      fgColor,
+      bgColor,
+      isTransparentBg,
+      dotStyle,
+      cornerSquareStyle,
+      cornerDotStyle,
+      logo,
+    ],
   );
 
   const hasData = debouncedData.trim().length > 0;
@@ -103,6 +141,12 @@ export function QRGenerator() {
     const reader = new FileReader();
     reader.onload = () => setLogo(reader.result as string);
     reader.readAsDataURL(file);
+  }
+
+  function swapColors() {
+    const temp = fgColor;
+    setFgColor(bgColor);
+    setBgColor(temp);
   }
 
   async function run(action: string, fn: () => Promise<void>) {
@@ -122,7 +166,7 @@ export function QRGenerator() {
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-[1fr_minmax(240px,300px)]">
+    <div className="grid gap-6 md:grid-cols-[1fr_minmax(280px,320px)]">
       {/* Left: content + customize */}
       <div className="space-y-6">
         {/* Tabs */}
@@ -149,7 +193,7 @@ export function QRGenerator() {
         </div>
 
         {/* Content inputs */}
-        <div>
+        <div className="rounded-[12px] border border-border bg-surface p-4">
           {tab === "url" && (
             <div>
               <Label htmlFor="qr-url">Link</Label>
@@ -224,6 +268,7 @@ export function QRGenerator() {
                 <Label htmlFor="wifi-ssid">Network name (SSID)</Label>
                 <input
                   id="wifi-ssid"
+                  placeholder="MyHomeWifi"
                   value={wifi.ssid}
                   onChange={(e) =>
                     setWifi((w) => ({ ...w, ssid: e.target.value }))
@@ -235,6 +280,7 @@ export function QRGenerator() {
                 <Label htmlFor="wifi-pass">Password</Label>
                 <input
                   id="wifi-pass"
+                  placeholder="Network password"
                   value={wifi.password}
                   disabled={wifi.encryption === "nopass"}
                   onChange={(e) =>
@@ -266,37 +312,112 @@ export function QRGenerator() {
 
           {tab === "vcard" && (
             <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="vc-name">Full Name *</Label>
+                  <input
+                    id="vc-name"
+                    placeholder="Jane Doe"
+                    value={vcard.name}
+                    onChange={(e) =>
+                      setVcard((v) => ({ ...v, name: e.target.value }))
+                    }
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="vc-title">Title / Role</Label>
+                  <input
+                    id="vc-title"
+                    placeholder="Product Designer"
+                    value={vcard.title}
+                    onChange={(e) =>
+                      setVcard((v) => ({ ...v, title: e.target.value }))
+                    }
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="vc-company">Company</Label>
+                  <input
+                    id="vc-company"
+                    placeholder="Acme Inc."
+                    value={vcard.company}
+                    onChange={(e) =>
+                      setVcard((v) => ({ ...v, company: e.target.value }))
+                    }
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="vc-phone">Phone</Label>
+                  <input
+                    id="vc-phone"
+                    type="tel"
+                    placeholder="+1 555 123 4567"
+                    value={vcard.phone}
+                    onChange={(e) =>
+                      setVcard((v) => ({ ...v, phone: e.target.value }))
+                    }
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="vc-email">Email</Label>
+                  <input
+                    id="vc-email"
+                    type="email"
+                    placeholder="jane@example.com"
+                    value={vcard.email}
+                    onChange={(e) =>
+                      setVcard((v) => ({ ...v, email: e.target.value }))
+                    }
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="vc-web">Website</Label>
+                  <input
+                    id="vc-web"
+                    type="url"
+                    placeholder="https://janedoe.com"
+                    value={vcard.website}
+                    onChange={(e) =>
+                      setVcard((v) => ({ ...v, website: e.target.value }))
+                    }
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
               <div>
-                <Label htmlFor="vc-name">Name</Label>
+                <Label htmlFor="vc-addr">Address</Label>
                 <input
-                  id="vc-name"
-                  value={vcard.name}
+                  id="vc-addr"
+                  placeholder="123 Market St, Suite 400"
+                  value={vcard.address}
                   onChange={(e) =>
-                    setVcard((v) => ({ ...v, name: e.target.value }))
+                    setVcard((v) => ({ ...v, address: e.target.value }))
                   }
                   className={inputCls}
                 />
               </div>
+
               <div>
-                <Label htmlFor="vc-phone">Phone</Label>
-                <input
-                  id="vc-phone"
-                  type="tel"
-                  value={vcard.phone}
+                <Label htmlFor="vc-note">Bio / Note</Label>
+                <textarea
+                  id="vc-note"
+                  rows={2}
+                  placeholder="Brief note or summary"
+                  value={vcard.note}
                   onChange={(e) =>
-                    setVcard((v) => ({ ...v, phone: e.target.value }))
-                  }
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <Label htmlFor="vc-email">Email</Label>
-                <input
-                  id="vc-email"
-                  type="email"
-                  value={vcard.email}
-                  onChange={(e) =>
-                    setVcard((v) => ({ ...v, email: e.target.value }))
+                    setVcard((v) => ({ ...v, note: e.target.value }))
                   }
                   className={inputCls}
                 />
@@ -305,77 +426,286 @@ export function QRGenerator() {
           )}
         </div>
 
-        {/* Customize row */}
-        <div className="space-y-4 rounded-[12px] border border-border bg-surface p-4">
-          <p className="text-sm font-medium">Customize</p>
-          <div className="grid grid-cols-2 gap-4">
+        {/* Customize Panel (Inspired by ass.html) */}
+        <div className="space-y-6 rounded-[12px] border border-border bg-surface p-4 sm:p-5">
+          <div className="flex items-center justify-between border-b border-border pb-3">
             <div>
-              <Label htmlFor="fg">Foreground</Label>
-              <input
-                id="fg"
-                type="color"
-                value={fgColor}
-                onChange={(e) => setFgColor(e.target.value)}
-                className="h-9 w-full cursor-pointer rounded-[8px] border border-border bg-surface"
-              />
-            </div>
-            <div>
-              <Label htmlFor="bg">Background</Label>
-              <input
-                id="bg"
-                type="color"
-                value={bgColor}
-                onChange={(e) => setBgColor(e.target.value)}
-                className="h-9 w-full cursor-pointer rounded-[8px] border border-border bg-surface"
-              />
+              <h2 className="text-sm font-semibold tracking-tight">
+                Design and customize
+              </h2>
+              <p className="text-xs text-muted">
+                Choose color scheme, pattern, corners, and logos
+              </p>
             </div>
           </div>
 
+          {/* 1. Curated Color Schemes */}
           <div>
-            <Label>Dot style</Label>
-            <div className="flex gap-1 rounded-[8px] border border-border p-1">
-              {(["square", "rounded", "dots"] as DotStyle[]).map((d) => (
+            <Label>Color Schemes</Label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {COLOR_SCHEMES.map((scheme) => {
+                const isSelected =
+                  fgColor.toLowerCase() === scheme.fg.toLowerCase() &&
+                  bgColor.toLowerCase() === scheme.bg.toLowerCase() &&
+                  !isTransparentBg;
+                return (
+                  <button
+                    key={scheme.id}
+                    type="button"
+                    title={scheme.label}
+                    onClick={() => {
+                      setFgColor(scheme.fg);
+                      setBgColor(scheme.bg);
+                      setIsTransparentBg(false);
+                    }}
+                    className={`flex items-center gap-1.5 rounded-[8px] border p-1.5 transition-all ${
+                      isSelected
+                        ? "border-accent ring-2 ring-accent/30 bg-accent/5"
+                        : "border-border hover:border-muted"
+                    }`}
+                  >
+                    <div
+                      className="size-5 rounded-[4px] border border-black/10"
+                      style={{ backgroundColor: scheme.fg }}
+                    />
+                    <div
+                      className="size-5 rounded-[4px] border border-black/10"
+                      style={{ backgroundColor: scheme.bg }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2. Custom Color Pickers with Hex inputs & Swap */}
+          <div className="space-y-3 rounded-[8px] bg-bg/50 p-3 border border-border">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              {/* Primary Color */}
+              <div className="flex-1">
+                <Label htmlFor="fg-input">Primary color</Label>
+                <div className="mt-1 flex items-center gap-2 rounded-[8px] border border-border bg-surface px-2 py-1 focus-within:border-accent">
+                  <input
+                    type="color"
+                    id="fg-picker"
+                    value={fgColor}
+                    onChange={(e) => setFgColor(e.target.value)}
+                    className="size-7 cursor-pointer rounded-[4px] border-none bg-transparent"
+                  />
+                  <input
+                    type="text"
+                    id="fg-input"
+                    value={fgColor.toUpperCase()}
+                    onChange={(e) => setFgColor(e.target.value)}
+                    maxLength={7}
+                    className="w-full bg-transparent font-mono text-xs font-medium uppercase outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Swap Button */}
+              <div className="flex justify-center pt-2 sm:pt-4">
                 <button
-                  key={d}
                   type="button"
-                  aria-pressed={dotStyle === d}
-                  onClick={() => setDotStyle(d)}
-                  className={`flex-1 rounded-[6px] px-2 py-1.5 text-sm capitalize transition-colors ${
-                    dotStyle === d
+                  onClick={swapColors}
+                  title="Swap colors"
+                  aria-label="Swap colors"
+                  className="flex size-9 items-center justify-center rounded-full border border-border bg-surface text-muted transition hover:border-accent hover:text-ink active:scale-95"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l4-4m-4 4l-4-4" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Secondary Color */}
+              <div className="flex-1">
+                <Label htmlFor="bg-input">Secondary color</Label>
+                <div className="mt-1 flex items-center gap-2 rounded-[8px] border border-border bg-surface px-2 py-1 focus-within:border-accent">
+                  <input
+                    type="color"
+                    id="bg-picker"
+                    disabled={isTransparentBg}
+                    value={bgColor}
+                    onChange={(e) => setBgColor(e.target.value)}
+                    className="size-7 cursor-pointer rounded-[4px] border-none bg-transparent disabled:opacity-30"
+                  />
+                  <input
+                    type="text"
+                    id="bg-input"
+                    disabled={isTransparentBg}
+                    value={isTransparentBg ? "TRANSPARENT" : bgColor.toUpperCase()}
+                    onChange={(e) => setBgColor(e.target.value)}
+                    maxLength={7}
+                    className="w-full bg-transparent font-mono text-xs font-medium uppercase outline-none disabled:opacity-50"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 pt-1 text-xs text-muted cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isTransparentBg}
+                onChange={(e) => setIsTransparentBg(e.target.checked)}
+                className="rounded border-border text-accent focus:ring-accent"
+              />
+              Transparent background
+            </label>
+          </div>
+
+          {/* 3. QR Pattern / Dot Style (6 styles from ass.html) */}
+          <div>
+            <Label>Pattern style</Label>
+            <div className="mt-1.5 grid grid-cols-3 gap-1.5 rounded-[8px] border border-border p-1 text-xs">
+              {(
+                [
+                  { id: "square", label: "Square" },
+                  { id: "rounded", label: "Rounded" },
+                  { id: "dots", label: "Dots" },
+                  { id: "classy", label: "Classy" },
+                  { id: "classy-rounded", label: "Classy Round" },
+                  { id: "extra-rounded", label: "Extra Round" },
+                ] as { id: DotStyle; label: string }[]
+              ).map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  aria-pressed={dotStyle === d.id}
+                  onClick={() => setDotStyle(d.id)}
+                  className={`rounded-[6px] px-2 py-1.5 text-xs font-medium transition-colors ${
+                    dotStyle === d.id
                       ? "bg-accent text-accent-ink"
                       : "text-muted hover:text-ink"
                   }`}
                 >
-                  {d}
+                  {d.label}
                 </button>
               ))}
             </div>
           </div>
 
+          {/* 4. Corners Frame & Dot Style */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <Label>Corner frame</Label>
+              <div className="mt-1 flex gap-1 rounded-[8px] border border-border p-1 text-xs">
+                {(
+                  [
+                    { id: "square", label: "Square" },
+                    { id: "dot", label: "Rounded" },
+                    { id: "extra-rounded", label: "Extra" },
+                  ] as { id: CornerSquareStyle; label: string }[]
+                ).map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setCornerSquareStyle(c.id)}
+                    className={`flex-1 rounded-[6px] px-2 py-1 text-xs font-medium transition-colors ${
+                      cornerSquareStyle === c.id
+                        ? "bg-accent text-accent-ink"
+                        : "text-muted hover:text-ink"
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label>Corner dot</Label>
+              <div className="mt-1 flex gap-1 rounded-[8px] border border-border p-1 text-xs">
+                {(
+                  [
+                    { id: "square", label: "Square" },
+                    { id: "dot", label: "Round" },
+                  ] as { id: CornerDotStyle; label: string }[]
+                ).map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setCornerDotStyle(c.id)}
+                    className={`flex-1 rounded-[6px] px-2 py-1 text-xs font-medium transition-colors ${
+                      cornerDotStyle === c.id
+                        ? "bg-accent text-accent-ink"
+                        : "text-muted hover:text-ink"
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Center Logo (Suggested presets & upload) */}
           <div>
-            <Label htmlFor="logo">Center logo (optional)</Label>
+            <Label htmlFor="logo">Add logo</Label>
+            <p className="mb-2 text-xs text-muted">
+              Select a popular icon or upload your own image.
+            </p>
+
+            <div className="flex flex-wrap gap-1.5 pb-3">
+              {SUGGESTED_LOGOS.map((item) => {
+                const isSelected = logo === item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setLogo(isSelected ? undefined : item.icon)}
+                    title={item.label}
+                    className={`flex items-center gap-1.5 rounded-[6px] border px-2 py-1 text-xs font-medium transition-colors ${
+                      isSelected
+                        ? "border-accent bg-accent/10 text-accent font-semibold"
+                        : "border-border text-muted hover:border-muted hover:text-ink"
+                    }`}
+                  >
+                    <Image
+                      src={item.icon}
+                      alt={item.label}
+                      width={14}
+                      height={14}
+                      className="size-3.5 object-contain"
+                    />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
             <div className="flex items-center gap-2">
               <input
                 id="logo"
                 type="file"
                 accept="image/*"
                 onChange={onLogoChange}
-                className="block w-full text-sm text-muted file:mr-3 file:rounded-[8px] file:border file:border-border file:bg-bg file:px-3 file:py-1.5 file:text-sm file:font-medium"
+                className="block w-full text-xs text-muted file:mr-3 file:rounded-[8px] file:border file:border-border file:bg-bg file:px-3 file:py-1.5 file:text-xs file:font-medium"
               />
               {logo && (
                 <button
                   type="button"
                   onClick={() => setLogo(undefined)}
-                  className="rounded-[8px] border border-border px-2 py-1.5 text-sm text-muted hover:text-ink"
+                  className="shrink-0 rounded-[8px] border border-border px-2.5 py-1.5 text-xs text-muted hover:text-danger hover:border-danger"
                 >
-                  Remove
+                  Remove logo
                 </button>
               )}
             </div>
             {logo && (
               <p className="mt-2 text-xs text-muted">
-                A logo can make the code harder to scan. Error correction is set
-                to high to help.
+                Logo active. High error correction is applied automatically for
+                reliable scans.
               </p>
             )}
           </div>
@@ -384,7 +714,14 @@ export function QRGenerator() {
 
       {/* Right: preview + actions */}
       <div className="space-y-4 md:sticky md:top-20 md:self-start">
-        <QRCanvas ref={canvasRef} config={config} size={280} />
+        <div className="rounded-[12px] border border-border bg-surface p-4 flex flex-col items-center">
+          <QRCanvas ref={canvasRef} config={config} size={280} />
+          {hasData && (
+            <p className="mt-2 text-center text-xs text-muted">
+              Live scannable preview
+            </p>
+          )}
+        </div>
 
         <div className="space-y-2">
           <button
@@ -393,7 +730,7 @@ export function QRGenerator() {
             onClick={() =>
               run("png", () => canvasRef.current!.downloadPng("qr-code"))
             }
-            className="w-full rounded-[8px] bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:opacity-90 disabled:opacity-40"
+            className="w-full rounded-[8px] bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:opacity-90 disabled:opacity-40 transition"
           >
             {busy === "png" ? "Preparing…" : "Download PNG"}
           </button>
@@ -404,7 +741,7 @@ export function QRGenerator() {
               onClick={() =>
                 run("svg", () => canvasRef.current!.downloadSvg("qr-code"))
               }
-              className="rounded-[8px] border border-border px-4 py-2.5 text-sm font-medium hover:bg-bg disabled:opacity-40"
+              className="rounded-[8px] border border-border px-4 py-2.5 text-sm font-medium hover:bg-bg disabled:opacity-40 transition"
             >
               Download SVG
             </button>
@@ -412,7 +749,7 @@ export function QRGenerator() {
               type="button"
               disabled={!hasData || busy !== null}
               onClick={() => run("copy", () => canvasRef.current!.copyPng())}
-              className="rounded-[8px] border border-border px-4 py-2.5 text-sm font-medium hover:bg-bg disabled:opacity-40"
+              className="rounded-[8px] border border-border px-4 py-2.5 text-sm font-medium hover:bg-bg disabled:opacity-40 transition"
             >
               {busy === "copy" ? "Copying…" : "Copy image"}
             </button>

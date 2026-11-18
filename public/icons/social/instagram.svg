@@ -1,0 +1,29 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="19.995" cy="19.995" r="16.665" fill="url(#instagram-gradient-_R_22branpfjibteivb_)"></circle>
+                                        <path
+                                          d="M20 24.846A4.85 4.85 0 0 1 15.154 20 4.85 4.85 0 0 1 20 15.154 4.85 4.85 0 0 1 24.848 20 4.85 4.85 0 0 1 20 24.846m0-8.308A3.466 3.466 0 0 0 16.54 20 3.465 3.465 0 0 0 20 23.462 3.465 3.465 0 0 0 23.463 20 3.466 3.466 0 0 0 20 16.538m5.193-.691a1.038 1.038 0 1 0 0-2.077 1.038 1.038 0 0 0 0 2.077"
+                                          fill="#fff"
+                                        ></path>
+                                        <path
+                                          d="M24.154 29h-8.308A4.85 4.85 0 0 1 11 24.154v-8.308A4.85 4.85 0 0 1 15.846 11h8.308A4.85 4.85 0 0 1 29 15.846v8.308A4.85 4.85 0 0 1 24.154 29m-8.308-16.615a3.466 3.466 0 0 0-3.461 3.461v8.308a3.466 3.466 0 0 0 3.461 3.461h8.308a3.466 3.466 0 0 0 3.461-3.461v-8.308a3.466 3.466 0 0 0-3.461-3.461z"
+                                          fill="#fff"
+                                        ></path>
+                                        <defs>
+                                          <radialGradient
+                                            id="instagram-gradient-_R_22branpfjibteivb_"
+                                            cx="0"
+                                            cy="0"
+                                            r="1"
+                                            gradientUnits="userSpaceOnUse"
+                                            gradientTransform="translate(15.72 36.684)scale(41.5471)"
+                                          >
+                                            <stop stop-color="#FD5"></stop>
+                                            <stop offset="0.328" stop-color="#FF543F"></stop>
+                                            <stop offset="0.348" stop-color="#FC5245"></stop>
+                                            <stop offset="0.504" stop-color="#E64771"></stop>
+                                            <stop offset="0.643" stop-color="#D53E91"></stop>
+                                            <stop offset="0.761" stop-color="#CC39A4"></stop>
+                                            <stop offset="0.841" stop-color="#C837AB"></stop>
+                                          </radialGradient>
+                                        </defs>
+                                      </svg>

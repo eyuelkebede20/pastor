@@ -23,6 +23,20 @@ export const FIELD_TYPE_ORDER = [
   "github",
   "tiktok",
   "facebook",
+  "telegram",
+  "snapchat",
+  "pinterest",
+  "reddit",
+  "dribbble",
+  "signal",
+  "tripadvisor",
+  "yelp",
+  "googlereviews",
+  "tumblr",
+  "viber",
+  "line",
+  "doordash",
+  "xing",
   "custom",
 ] as const;
 
@@ -40,6 +54,20 @@ export const FIELD_TYPES: Record<FieldType, FieldTypeDef> = {
   github: { label: "GitHub", placeholder: "github.com/handle", kind: "url" },
   tiktok: { label: "TikTok", placeholder: "tiktok.com/@handle", kind: "url" },
   facebook: { label: "Facebook", placeholder: "facebook.com/handle", kind: "url" },
+  telegram: { label: "Telegram", placeholder: "t.me/username", kind: "url" },
+  snapchat: { label: "Snapchat", placeholder: "snapchat.com/add/username", kind: "url" },
+  pinterest: { label: "Pinterest", placeholder: "pinterest.com/username", kind: "url" },
+  reddit: { label: "Reddit", placeholder: "reddit.com/u/username", kind: "url" },
+  dribbble: { label: "Dribbble", placeholder: "dribbble.com/username", kind: "url" },
+  signal: { label: "Signal", placeholder: "signal.me/#p/...", kind: "url" },
+  tripadvisor: { label: "TripAdvisor", placeholder: "tripadvisor.com/...", kind: "url" },
+  yelp: { label: "Yelp", placeholder: "yelp.com/biz/...", kind: "url" },
+  googlereviews: { label: "Google Reviews", placeholder: "g.page/r/...", kind: "url" },
+  tumblr: { label: "Tumblr", placeholder: "username.tumblr.com", kind: "url" },
+  viber: { label: "Viber", placeholder: "+1 555 123 4567", kind: "tel" },
+  line: { label: "LINE", placeholder: "line.me/ti/p/...", kind: "url" },
+  doordash: { label: "DoorDash", placeholder: "doordash.com/store/...", kind: "url" },
+  xing: { label: "XING", placeholder: "xing.com/profile/...", kind: "url" },
   custom: { label: "Custom", placeholder: "Value", kind: "custom" },
 };
 
@@ -99,20 +127,32 @@ export function buildVcard(input: VcardInput): string {
   if (input.title) lines.push(`TITLE:${escapeVcf(input.title)}`);
 
   for (const f of input.fields) {
-    const value = f.value.trim();
-    if (!value) continue;
-    const kind = fieldKind(f.type);
-    if (kind === "tel" || kind === "whatsapp") {
-      lines.push(`TEL;TYPE=CELL:${escapeVcf(value)}`);
-    } else if (kind === "email") {
-      lines.push(`EMAIL;TYPE=INTERNET:${escapeVcf(value)}`);
-    } else {
-      const href = hrefForField(f.type, value);
-      if (href) lines.push(`URL:${escapeVcf(href)}`);
+    const val = f.value.trim();
+    if (!val) continue;
+    switch (f.type) {
+      case "phone":
+      case "viber":
+        lines.push(`TEL;TYPE=CELL:${escapeVcf(val)}`);
+        break;
+      case "email":
+        lines.push(`EMAIL;TYPE=INTERNET:${escapeVcf(val)}`);
+        break;
+      case "website":
+        lines.push(`URL:${escapeVcf(normalizeUrl(val))}`);
+        break;
+      default: {
+        const url = hrefForField(f.type, val);
+        if (url) {
+          lines.push(`X-SOCIALPROFILE;TYPE=${escapeVcf(f.type)}:${escapeVcf(url)}`);
+        } else {
+          lines.push(`NOTE:${escapeVcf(`${f.type}: ${val}`)}`);
+        }
+        break;
+      }
     }
   }
 
   lines.push(`URL:${escapeVcf(input.cardUrl)}`);
   lines.push("END:VCARD");
-  return lines.join("\r\n");
+  return lines.join("\n");
 }

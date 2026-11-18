@@ -89,9 +89,22 @@ function loadEnvFile(envPath) {
 loadEnvFile(path.join(__dirname, '.env'));
 loadEnvFile(path.join(appDir, '.env'));
 
-// 5. Default URLs for pastor.senaycreatives.com if not provided
-process.env.NEXT_PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pastor.senaycreatives.com';
-process.env.BETTER_AUTH_URL = process.env.BETTER_AUTH_URL || 'https://pastor.senaycreatives.com';
+// 5. Production defaults for pastor.senaycreatives.com
+const defaultDbUrl = 'postgresql://neondb_owner:npg_nW1YXcMSmKE5@ep-soft-frost-atx0u8e5-pooler.c-9.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require';
+const defaultAuthSecret = 'opensd23r23f2@#$#@Fsdafasdfs#@#$#F#@FDFDF#fef233[['[.[l[l[[[]]]]]]']';
+
+if (!process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
+  process.env.NEXT_PUBLIC_APP_URL = 'https://pastor.senaycreatives.com';
+}
+if (!process.env.BETTER_AUTH_URL || process.env.BETTER_AUTH_URL.includes('localhost')) {
+  process.env.BETTER_AUTH_URL = 'https://pastor.senaycreatives.com';
+}
+if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('user:pass@127.0.0.1') || process.env.DATABASE_URL.includes('user:pass@localhost')) {
+  process.env.DATABASE_URL = defaultDbUrl;
+}
+if (!process.env.BETTER_AUTH_SECRET) {
+  process.env.BETTER_AUTH_SECRET = defaultAuthSecret;
+}
 
 // Normalize @localhost to @127.0.0.1 so cPanel PostgreSQL does not attempt IPv6 (::1) which lacks pg_hba.conf entry
 if (process.env.DATABASE_URL) {

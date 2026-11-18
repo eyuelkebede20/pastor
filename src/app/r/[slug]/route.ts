@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { eq, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
+import { getBaseUrl } from "@/lib/base-url";
 
 export async function GET(
   req: NextRequest,
@@ -20,8 +21,10 @@ export async function GET(
     target = undefined;
   }
 
+  const base = await getBaseUrl();
+
   if (!target) {
-    return NextResponse.redirect(new URL("/?notfound=1", req.url), 302);
+    return NextResponse.redirect(new URL("/?notfound=1", base), 302);
   }
 
   // Fire-and-forget click count; never block the redirect on it.
