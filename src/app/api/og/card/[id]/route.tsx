@@ -15,7 +15,12 @@ export async function GET(
   const { id } = await params;
 
   let card:
-    | { fullName: string; title: string | null; company: string | null }
+    | {
+        fullName: string;
+        title: string | null;
+        company: string | null;
+        avatarUrl: string | null;
+      }
     | null = null;
   try {
     const [row] = await db
@@ -23,6 +28,7 @@ export async function GET(
         fullName: schema.cards.fullName,
         title: schema.cards.title,
         company: schema.companies.name,
+        values: schema.cards.values,
       })
       .from(schema.cards)
       .innerJoin(
@@ -31,7 +37,14 @@ export async function GET(
       )
       .where(eq(schema.cards.publicId, id))
       .limit(1);
-    card = row ?? null;
+    card = row
+      ? {
+          fullName: row.fullName,
+          title: row.title,
+          company: row.company,
+          avatarUrl: (row.values as Record<string, string>)?._avatar || null,
+        }
+      : null;
   } catch {
     card = null;
   }
@@ -94,22 +107,38 @@ export async function GET(
         >
           <div style={{ display: "flex", flexDirection: "column", maxWidth: 600 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-              <div
-                style={{
-                  width: 96,
-                  height: 96,
-                  borderRadius: 96,
-                  background: "#16181D",
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 40,
-                  fontWeight: 700,
-                }}
-              >
-                {initials || "?"}
-              </div>
+              {card.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={card.avatarUrl}
+                  width={96}
+                  height={96}
+                  alt=""
+                  style={{
+                    width: 96,
+                    height: 96,
+                    borderRadius: 96,
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 96,
+                    height: 96,
+                    borderRadius: 96,
+                    background: "#16181D",
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 40,
+                    fontWeight: 700,
+                  }}
+                >
+                  {initials || "?"}
+                </div>
+              )}
               {card.company && (
                 <div style={{ fontSize: 30, color: "#0E7C66", fontWeight: 700 }}>
                   {card.company}

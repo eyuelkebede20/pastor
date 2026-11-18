@@ -232,6 +232,161 @@ export async function addCard(input: {
   return { ok: true };
 }
 
+export async function createCardWithDetails(input: {
+  companyId: string;
+  fullName: string;
+  title?: string;
+  avatarUrl?: string | null;
+  values?: Record<string, string>;
+}): Promise<ActionResult<{ cardId: string; publicId: string }>> {
+  const user = await requireUser();
+  if (!(await ownedCompany(input.companyId, user.id))) {
+    return { ok: false, error: "Company not found." };
+  }
+
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(schema.cards)
+    .where(eq(schema.cards.companyId, input.companyId));
+  if (count >= MAX_CARDS) {
+    return { ok: false, error: `You've reached the ${MAX_CARDS}-person limit.` };
+  }
+
+  const [{ maxPos }] = await db
+    .select({
+      maxPos: sql<number>`coalesce(max(${schema.cards.position}), -1)::int`,
+    })
+    .from(schema.cards)
+    .where(eq(schema.cards.companyId, input.companyId));
+
+  const values: Record<string, string> = {};
+  if (input.values) {
+    for (const [k, v] of Object.entries(input.values)) {
+      if (v && v.trim()) values[k] = v.trim().slice(0, 300);
+    }
+  }
+  if (input.avatarUrl && input.avatarUrl.trim()) {
+    values._avatar = input.avatarUrl.trim();
+  }
+
+  const publicId = newCardId();
+  const [row] = await db
+    .insert(schema.cards)
+    .values({
+      companyId: input.companyId,
+      publicId,
+      fullName: input.fullName.trim().slice(0, 80) || "New person",
+      title: input.title ? input.title.trim().slice(0, 80) : null,
+      values,
+      position: maxPos + 1,
+    })
+    .returning({ id: schema.cards.id });
+
+  revalidatePath("/cards");
+  return { ok: true, cardId: row.id, publicId };
+}
+
+export async function saveCard(input: {
+  id: string;
+  fullName: string;
+  title?: string;
+  avatarUrl?: string | null;
+  values?: Record<string, string>;
+}): Promise<ActionResult> {
+  const user = await requireUser();
+  const card = await ownedCard(input.id, user.id);
+  if (!card) return { ok: false, error: "Person not found." };
+
+  const fullName = input.fullName.trim().slice(0, 80) || "Unnamed";
+  const title = input.title !== undefined ? input.title.trim().slice(0, 80) || null : undefined;
+
+  const currentValues = { ...(card.values ?? {}) };
+  if (input.values) {
+    for (const [k, v] of Object.entries(input.values)) {
+      if (k === "_avatar") continue;
+      if (v && v.trim()) currentValues[k] = v.trim().slice(0, 300);
+      else delete currentValues[k];
+    }
+  }
+
+  if (input.avatarUrl !== undefined) {
+    if (input.avatarUrl && input.avatarUrl.trim()) {
+      currentValues._avatar = input.avatarUrl.trim();
+    } else {
+      delete currentValues._avatar;
+    }
+  }
+
+  const patch: { fullName: string; title?: string | null; values: Record<string, string> } = {
+    fullName,
+    values: currentValues,
+  };
+  if (title !== undefined) patch.title = title;
+
+  await db.update(schema.cards).set(patch).where(eq(schema.cards.id, input.id));
+  revalidatePath("/cards");
+  revalidatePath(`/c/${card.publicId}`);
+  return { ok: true };
+}
+
+export async function bulkAddCards(input: {
+  companyId: string;
+  cards: {
+    fullName: string;
+    title?: string;
+    avatarUrl?: string;
+    values?: Record<string, string>;
+  }[];
+}): Promise<ActionResult<{ count: number }>> {
+  const user = await requireUser();
+  if (!(await ownedCompany(input.companyId, user.id))) {
+    return { ok: false, error: "Company not found." };
+  }
+
+  if (!input.cards || input.cards.length === 0) {
+    return { ok: false, error: "No card data provided." };
+  }
+
+  const [{ count: currentCount }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(schema.cards)
+    .where(eq(schema.cards.companyId, input.companyId));
+
+  const availableSlots = MAX_CARDS - currentCount;
+  if (availableSlots <= 0) {
+    return { ok: false, error: `Company has reached the ${MAX_CARDS}-person limit.` };
+  }
+
+  const toInsert = input.cards.slice(0, availableSlots);
+
+  const [{ maxPos }] = await db
+    .select({
+      maxPos: sql<number>`coalesce(max(${schema.cards.position}), -1)::int`,
+    })
+    .from(schema.cards)
+    .where(eq(schema.cards.companyId, input.companyId));
+
+  let startPos = maxPos + 1;
+  const insertValues = toInsert.map((c) => {
+    const val: Record<string, string> = { ...(c.values ?? {}) };
+    if (c.avatarUrl && c.avatarUrl.trim()) {
+      val._avatar = c.avatarUrl.trim();
+    }
+    return {
+      companyId: input.companyId,
+      publicId: newCardId(),
+      fullName: c.fullName.trim().slice(0, 80) || "Unnamed",
+      title: c.title ? c.title.trim().slice(0, 80) : null,
+      values: val,
+      position: startPos++,
+    };
+  });
+
+  await db.insert(schema.cards).values(insertValues);
+  revalidatePath("/cards");
+  return { ok: true, count: insertValues.length };
+}
+
 export async function updateCard(input: {
   id: string;
   fullName?: string;

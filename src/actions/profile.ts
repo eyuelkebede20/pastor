@@ -56,6 +56,17 @@ export async function createProfile(input: {
       bio: parsed.data.bio || null,
       avatarUrl: parsed.data.avatarUrl || null,
     });
+
+    // Also sync avatar to Better Auth user table so header & session show the avatar
+    if (parsed.data.avatarUrl) {
+      await db
+        .update(schema.user)
+        .set({
+          name: parsed.data.displayName,
+          image: parsed.data.avatarUrl,
+        })
+        .where(eq(schema.user.id, user.id));
+    }
   } catch {
     return { ok: false, error: "That username was just taken. Try another." };
   }
@@ -86,6 +97,42 @@ export async function updateProfile(input: {
     })
     .where(eq(schema.profiles.userId, user.id))
     .returning({ username: schema.profiles.username });
+
+  // Sync with Better Auth user table so navbar avatar updates immediately
+  await db
+    .update(schema.user)
+    .set({
+      name: parsed.data.displayName,
+      image: parsed.data.avatarUrl || null,
+    })
+    .where(eq(schema.user.id, user.id));
+
+  if (rows.length) {
+    revalidatePath("/links");
+    revalidatePath(`/u/${rows[0].username}`);
+  }
+  return { ok: true };
+}
+
+export async function updateAvatar(avatarUrl: string): Promise<ProfileResult> {
+  const user = await requireUser();
+  const trimmed = avatarUrl.trim();
+
+  // Validate format (data:image/ or http:// or empty)
+  if (trimmed && !/^https?:\/\//i.test(trimmed) && !/^data:image\//i.test(trimmed)) {
+    return { ok: false, error: "Invalid image format." };
+  }
+
+  const rows = await db
+    .update(schema.profiles)
+    .set({ avatarUrl: trimmed || null })
+    .where(eq(schema.profiles.userId, user.id))
+    .returning({ username: schema.profiles.username });
+
+  await db
+    .update(schema.user)
+    .set({ image: trimmed || null })
+    .where(eq(schema.user.id, user.id));
 
   if (rows.length) {
     revalidatePath("/links");

@@ -38,6 +38,7 @@ export async function GET(
     fullName: card.fullName,
     title: card.title,
     company: card.company,
+    avatarUrl: values._avatar || null,
     cardUrl: `${base}/c/${id}`,
     fields: fields.map((f) => ({ type: f.type, value: values[f.id] ?? "" })),
   });

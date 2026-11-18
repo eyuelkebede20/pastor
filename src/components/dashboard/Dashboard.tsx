@@ -13,6 +13,7 @@ import {
   toggleLink,
 } from "@/actions/links";
 import { updateProfile } from "@/actions/profile";
+import { processAvatarFile } from "@/lib/avatar";
 
 const inputCls =
   "w-full rounded-[8px] border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent";
@@ -126,14 +127,65 @@ function ProfileHeader({
             />
           </div>
           <div>
-            <Label htmlFor="av">Avatar image URL</Label>
-            <input
-              id="av"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="https://…"
-              className={inputCls}
-            />
+            <Label>Avatar Photo</Label>
+            <div className="mt-2 flex items-center gap-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-border bg-bg text-xl font-bold uppercase shadow-sm">
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  displayName.charAt(0) || "👤"
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="cursor-pointer rounded-[8px] bg-accent px-3 py-1.5 text-xs font-semibold text-accent-ink hover:opacity-90 transition shadow-sm">
+                    Upload Photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const dataUrl = await processAvatarFile(file);
+                          setAvatarUrl(dataUrl);
+                        } catch (err) {
+                          setError(
+                            err instanceof Error
+                              ? err.message
+                              : "Failed to load image",
+                          );
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                  {avatarUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setAvatarUrl("")}
+                      className="rounded-[8px] border border-border px-3 py-1.5 text-xs text-muted hover:text-danger hover:border-danger transition"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="av"
+                    value={avatarUrl}
+                    onChange={(e) => setAvatarUrl(e.target.value)}
+                    placeholder="Or paste image URL (https://…)"
+                    className={`${inputCls} text-xs py-1`}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
           {error && <p className="text-sm text-danger">{error}</p>}
           <div className="flex gap-2">
@@ -156,7 +208,12 @@ function ProfileHeader({
         </div>
       ) : (
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-bg text-lg font-semibold uppercase">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            title="Click to edit profile & avatar"
+            className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-border bg-bg text-xl font-bold uppercase shadow-sm transition hover:border-accent focus:outline-none"
+          >
             {profile.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -165,9 +222,12 @@ function ProfileHeader({
                 className="h-full w-full object-cover"
               />
             ) : (
-              profile.displayName.charAt(0)
+              profile.displayName.charAt(0) || "👤"
             )}
-          </div>
+            <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[10px] font-semibold text-white opacity-0 group-hover:opacity-100 transition">
+              Edit
+            </span>
+          </button>
           <div className="min-w-0 flex-1">
             <p className="font-display font-bold">{profile.displayName}</p>
             {profile.bio && (

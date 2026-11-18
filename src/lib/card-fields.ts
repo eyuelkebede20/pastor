@@ -116,6 +116,7 @@ export type VcardInput = {
   fullName: string;
   title?: string | null;
   company?: string | null;
+  avatarUrl?: string | null;
   cardUrl: string;
   fields: { type: string; value: string }[];
 };
@@ -125,6 +126,18 @@ export function buildVcard(input: VcardInput): string {
   const lines = ["BEGIN:VCARD", "VERSION:3.0", `FN:${escapeVcf(input.fullName)}`];
   if (input.company) lines.push(`ORG:${escapeVcf(input.company)}`);
   if (input.title) lines.push(`TITLE:${escapeVcf(input.title)}`);
+
+  if (input.avatarUrl) {
+    if (input.avatarUrl.startsWith("data:image/")) {
+      const match = input.avatarUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+      if (match) {
+        const type = match[1].toUpperCase().includes("PNG") ? "PNG" : "JPEG";
+        lines.push(`PHOTO;ENCODING=b;TYPE=${type}:${match[2]}`);
+      }
+    } else if (/^https?:\/\//i.test(input.avatarUrl)) {
+      lines.push(`PHOTO;VALUE=URI:${escapeVcf(input.avatarUrl)}`);
+    }
+  }
 
   for (const f of input.fields) {
     const val = f.value.trim();

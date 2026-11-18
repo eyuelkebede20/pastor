@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { checkUsername, createProfile } from "@/actions/profile";
 import { Label, PageHeading } from "@/components/ui";
+import { processAvatarFile } from "@/lib/avatar";
 
 const inputCls =
   "w-full rounded-[8px] border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent";
@@ -18,6 +19,7 @@ export function Onboarding({ suggestedName }: { suggestedName: string }) {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState(suggestedName ?? "");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [avail, setAvail] = useState<Availability>({ state: "idle" });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -47,11 +49,22 @@ export function Onboarding({ suggestedName }: { suggestedName: string }) {
     return () => clearTimeout(t);
   }, [username]);
 
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await processAvatarFile(file);
+      setAvatarUrl(dataUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load image");
+    }
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setBusy(true);
-    const res = await createProfile({ username, displayName });
+    const res = await createProfile({ username, displayName, avatarUrl: avatarUrl || undefined });
     if (res.ok) {
       router.refresh();
     } else {
@@ -64,9 +77,51 @@ export function Onboarding({ suggestedName }: { suggestedName: string }) {
     <div className="mx-auto max-w-md">
       <PageHeading
         title="Claim your link page"
-        subtitle="Pick a username and a name to show. You can add links next."
+        subtitle="Pick a username and profile photo. You can add links next."
       />
       <form onSubmit={onSubmit} className="space-y-4">
+        {/* Avatar Upload */}
+        <div>
+          <Label>Profile Avatar (optional)</Label>
+          <div className="mt-1 flex items-center gap-3">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-lg font-semibold uppercase shadow-sm">
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrl}
+                  alt="Avatar"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                displayName.charAt(0) || "👤"
+              )}
+            </div>
+            <div className="flex-1 space-y-1">
+              <label className="inline-block cursor-pointer rounded-[8px] bg-accent px-3 py-1.5 text-xs font-semibold text-accent-ink hover:opacity-90 transition">
+                Upload Photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+              </label>
+              {avatarUrl && (
+                <button
+                  type="button"
+                  onClick={() => setAvatarUrl("")}
+                  className="ml-2 text-xs text-danger hover:underline"
+                >
+                  Remove
+                </button>
+              )}
+              <p className="text-[11px] text-muted">
+                JPG, PNG, or WebP. Auto-cropped & optimized.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div>
           <Label htmlFor="username">Username</Label>
           <div className="flex items-center rounded-[8px] border border-border bg-surface px-3 focus-within:border-accent">
@@ -109,7 +164,7 @@ export function Onboarding({ suggestedName }: { suggestedName: string }) {
         <button
           type="submit"
           disabled={busy || avail.state !== "ok" || !displayName.trim()}
-          className="w-full rounded-[8px] bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:opacity-90 disabled:opacity-40"
+          className="w-full rounded-[8px] bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:opacity-90 disabled:opacity-40 transition"
         >
           {busy ? "Creating…" : "Create my page"}
         </button>

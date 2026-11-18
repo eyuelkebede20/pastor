@@ -91,6 +91,7 @@ export default async function CardPage({
 
   const { card, fields } = data;
   const values = card.values ?? {};
+  const avatar = values["_avatar"] || null;
   const rows = fields
     .map((f) => ({ field: f, value: (values[f.id] ?? "").trim() }))
     .filter((r) => r.value.length > 0);
@@ -109,8 +110,17 @@ export default async function CardPage({
         <div className="h-20 bg-accent" />
         <div className="px-6 pb-6">
           <div className="-mt-10 flex items-end gap-4">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-surface bg-ink text-2xl font-bold text-accent-ink">
-              {initials || "?"}
+            <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-surface bg-ink text-2xl font-bold text-accent-ink shadow-sm">
+              {avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatar}
+                  alt={card.fullName}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initials || "?"
+              )}
             </div>
           </div>
 

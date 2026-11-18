@@ -14,14 +14,19 @@ export async function GET(
 ) {
   const { username } = await params;
 
-  let profile: { displayName: string; username: string; bio: string | null } | null =
-    null;
+  let profile: {
+    displayName: string;
+    username: string;
+    bio: string | null;
+    avatarUrl: string | null;
+  } | null = null;
   try {
     const [row] = await db
       .select({
         displayName: schema.profiles.displayName,
         username: schema.profiles.username,
         bio: schema.profiles.bio,
+        avatarUrl: schema.profiles.avatarUrl,
       })
       .from(schema.profiles)
       .where(eq(schema.profiles.username, username.toLowerCase()))
@@ -81,17 +86,46 @@ export async function GET(
             maxWidth: 620,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                background: "#0E7C66",
-                boxShadow: "inset 0 0 0 6px #FAFAF8, inset 0 0 0 9px #0E7C66",
-              }}
-            />
-            <div style={{ fontSize: 28, color: "#0E7C66", fontWeight: 700 }}>
-              Pastor
+          <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+            {profile.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profile.avatarUrl}
+                width={80}
+                height={80}
+                alt=""
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 80,
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 80,
+                  background: "#16181D",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 36,
+                  fontWeight: 700,
+                }}
+              >
+                {profile.displayName.charAt(0) || "?"}
+              </div>
+            )}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 24, color: "#0E7C66", fontWeight: 700 }}>
+                Pastor
+              </div>
+              <div style={{ fontSize: 18, color: "#6B7280" }}>
+                pastor.app/u/{profile.username}
+              </div>
             </div>
           </div>
           <div

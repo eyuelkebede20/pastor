@@ -33,16 +33,21 @@ const httpUrl = z
     "Links must start with http:// or https://.",
   );
 
+const imageUrlOrData = z
+  .string()
+  .trim()
+  .refine(
+    (v) => !v || /^https?:\/\//i.test(v) || /^data:image\//i.test(v),
+    "Enter a valid image URL or upload an image.",
+  )
+  .optional()
+  .or(z.literal(""));
+
 export const profileSchema = z.object({
   username: usernameSchema,
   displayName: z.string().trim().min(1, "Add a display name.").max(60),
   bio: z.string().trim().max(160).optional().or(z.literal("")),
-  avatarUrl: z
-    .string()
-    .trim()
-    .url("Enter a valid image URL.")
-    .optional()
-    .or(z.literal("")),
+  avatarUrl: imageUrlOrData,
 });
 
 export const linkSchema = z.object({

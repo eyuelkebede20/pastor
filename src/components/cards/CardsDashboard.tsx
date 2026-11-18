@@ -11,7 +11,6 @@ import {
   type FieldType,
 } from "@/lib/card-fields";
 import {
-  addCard,
   addField,
   createCompany,
   deleteCard,
@@ -22,6 +21,8 @@ import {
   updateCard,
   updateField,
 } from "@/actions/cards";
+import { CardEditModal, type CardData } from "./CardEditModal";
+import { DataUploadModal } from "./DataUploadModal";
 
 type Company = { id: string; name: string };
 type Field = { id: string; label: string; type: string; icon: string | null };
@@ -60,8 +61,7 @@ export function CardsDashboard({
           vCards
         </h1>
         <p className="mt-2 text-muted">
-          Manage a grid of people per company and hand each one a scannable
-          virtual ID.
+          Manage, customize, and share digital cards for your team and company.
         </p>
       </div>
 
@@ -113,9 +113,9 @@ function CompanyBar({
         <Link
           key={c.id}
           href={`/cards?c=${c.id}`}
-          className={`rounded-full border px-3 py-1.5 text-sm font-medium ${
+          className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
             c.id === selectedId
-              ? "border-accent bg-accent/10 text-accent"
+              ? "border-accent bg-accent/10 text-accent font-semibold"
               : "border-border text-muted hover:text-ink"
           }`}
         >
@@ -150,7 +150,7 @@ function CompanyBar({
       ) : (
         <button
           onClick={() => setAdding(true)}
-          className="rounded-full border border-dashed border-border px-3 py-1.5 text-sm font-medium text-muted hover:border-accent hover:text-accent"
+          className="rounded-full border border-dashed border-border px-3 py-1.5 text-sm font-medium text-muted hover:border-accent hover:text-accent transition"
         >
           + New company
         </button>
@@ -164,7 +164,7 @@ function EmptyCompanies() {
     <div className="rounded-[12px] border border-dashed border-border bg-surface px-4 py-12 text-center">
       <p className="font-medium">No companies yet</p>
       <p className="mt-1 text-sm text-muted">
-        Create a company above to start adding people and columns.
+        Create a company above to start adding people, customizing cards, and uploading data.
       </p>
     </div>
   );
@@ -186,64 +186,91 @@ function CompanyPanel({
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(company.name);
 
+  // Modals state
+  const [editingCard, setEditingCard] = useState<CardData | null>(null);
+  const [creatingCard, setCreatingCard] = useState(false);
+  const [uploadingData, setUploadingData] = useState(false);
+
   const refresh = () => router.refresh();
 
   return (
     <div className="space-y-4">
       {/* Company toolbar */}
-      <div className="flex flex-wrap items-center gap-2">
-        {renaming ? (
-          <>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="rounded-[8px] border border-border bg-surface px-2.5 py-1.5 text-sm outline-none focus:border-accent"
-            />
-            <button
-              onClick={() =>
-                start(async () => {
-                  await renameCompany({ id: company.id, name });
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          {renaming ? (
+            <>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="rounded-[8px] border border-border bg-surface px-2.5 py-1.5 text-sm outline-none focus:border-accent"
+              />
+              <button
+                onClick={() =>
+                  start(async () => {
+                    await renameCompany({ id: company.id, name });
+                    setRenaming(false);
+                    refresh();
+                  })
+                }
+                className="rounded-[8px] bg-accent px-3 py-1.5 text-sm font-semibold text-accent-ink"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
                   setRenaming(false);
-                  refresh();
-                })
-              }
-              className="rounded-[8px] bg-accent px-3 py-1.5 text-sm font-semibold text-accent-ink"
-            >
-              Save
-            </button>
-            <button
-              onClick={() => {
-                setRenaming(false);
-                setName(company.name);
-              }}
-              className="text-sm text-muted"
-            >
-              Cancel
-            </button>
-          </>
-        ) : (
-          <>
-            <h2 className="font-display text-lg font-bold">{company.name}</h2>
-            <button
-              onClick={() => setRenaming(true)}
-              className="rounded-[8px] border border-border px-2 py-1 text-xs text-muted hover:text-ink"
-            >
-              Rename
-            </button>
-          </>
-        )}
+                  setName(company.name);
+                }}
+                className="text-sm text-muted"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <h2 className="font-display text-lg font-bold">{company.name}</h2>
+              <button
+                onClick={() => setRenaming(true)}
+                className="rounded-[8px] border border-border px-2 py-1 text-xs text-muted hover:text-ink"
+              >
+                Rename
+              </button>
+            </>
+          )}
+        </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <AddColumn companyId={company.id} onDone={refresh} />
+
+          {/* Upload Data button (CSV / vCard) */}
           <button
-            onClick={() =>
-              start(async () => {
-                await addCard({ companyId: company.id });
-                refresh();
-              })
-            }
-            disabled={pending}
-            className="rounded-[8px] bg-accent px-3 py-1.5 text-sm font-semibold text-accent-ink hover:opacity-90 disabled:opacity-40"
+            type="button"
+            onClick={() => setUploadingData(true)}
+            className="flex items-center gap-1.5 rounded-[8px] border border-border px-3 py-1.5 text-sm font-medium text-ink hover:bg-bg transition"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <span>Upload Data</span>
+          </button>
+
+          {/* Add person button (opens clean card creator modal) */}
+          <button
+            type="button"
+            onClick={() => setCreatingCard(true)}
+            className="rounded-[8px] bg-accent px-3.5 py-1.5 text-sm font-semibold text-accent-ink hover:opacity-90 transition shadow-sm"
           >
             + Add person
           </button>
@@ -251,12 +278,12 @@ function CompanyPanel({
       </div>
 
       {/* Grid */}
-      <div className="overflow-x-auto rounded-[12px] border border-border">
+      <div className="overflow-x-auto rounded-[12px] border border-border bg-surface">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-border bg-bg/60">
-              <th className="sticky left-0 z-10 bg-bg/60 px-3 py-2 text-left font-medium">
-                Name
+              <th className="sticky left-0 z-10 bg-bg/95 px-3 py-2 text-left font-medium">
+                Person / Card
               </th>
               {fields.map((f) => (
                 <ColumnHeader key={f.id} field={f} onDone={refresh} />
@@ -269,9 +296,12 @@ function CompanyPanel({
               <tr>
                 <td
                   colSpan={fields.length + 2}
-                  className="px-3 py-10 text-center text-muted"
+                  className="px-3 py-12 text-center text-muted"
                 >
-                  No people yet. Use “+ Add person”.
+                  <p className="font-medium text-ink">No cards in this company yet</p>
+                  <p className="mt-1 text-xs text-muted">
+                    Click “+ Add person” to create a card with photo avatar, or “Upload Data” to import CSV / vCard.
+                  </p>
                 </td>
               </tr>
             ) : (
@@ -281,6 +311,7 @@ function CompanyPanel({
                   card={card}
                   fields={fields}
                   baseUrl={baseUrl}
+                  onEdit={() => setEditingCard(card)}
                   onStructuralChange={refresh}
                 />
               ))
@@ -309,6 +340,46 @@ function CompanyPanel({
           Delete company
         </button>
       </div>
+
+      {/* Edit Existing Card Modal */}
+      {editingCard && (
+        <CardEditModal
+          isOpen={Boolean(editingCard)}
+          onClose={() => setEditingCard(null)}
+          companyId={company.id}
+          companyName={company.name}
+          fields={fields}
+          initialCard={editingCard}
+          baseUrl={baseUrl}
+          onSaved={refresh}
+        />
+      )}
+
+      {/* Create New Card Modal */}
+      {creatingCard && (
+        <CardEditModal
+          isOpen={creatingCard}
+          onClose={() => setCreatingCard(false)}
+          companyId={company.id}
+          companyName={company.name}
+          fields={fields}
+          initialCard={null}
+          baseUrl={baseUrl}
+          onSaved={refresh}
+        />
+      )}
+
+      {/* Data Upload / Bulk Import Modal */}
+      {uploadingData && (
+        <DataUploadModal
+          isOpen={uploadingData}
+          onClose={() => setUploadingData(false)}
+          companyId={company.id}
+          companyName={company.name}
+          fields={fields}
+          onImported={refresh}
+        />
+      )}
     </div>
   );
 }
@@ -360,40 +431,42 @@ function AddColumn({
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="rounded-[8px] border border-border px-3 py-1.5 text-sm font-medium hover:bg-bg"
+        className="rounded-[8px] border border-border px-3 py-1.5 text-sm font-medium hover:bg-bg transition"
       >
         + Add column
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-2 w-64 rounded-[12px] border border-border bg-surface p-3 shadow-sm">
+        <div className="absolute right-0 z-20 mt-2 max-h-96 w-72 overflow-y-auto rounded-[12px] border border-border bg-surface p-3 shadow-lg">
           {!custom ? (
             <>
-              <p className="mb-2 text-xs font-medium text-muted">Choose a type</p>
-              <div className="grid grid-cols-2 gap-1">
+              <p className="mb-2 text-xs font-semibold text-muted uppercase tracking-wider">
+                Choose a channel
+              </p>
+              <div className="grid grid-cols-2 gap-1 max-h-64 overflow-y-auto pr-1">
                 {FIELD_TYPE_ORDER.filter((t) => t !== "custom").map((t) => (
                   <button
                     key={t}
                     disabled={pending}
                     onClick={() => pick(t)}
-                    className="flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-left text-sm hover:bg-bg"
+                    className="flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-left text-xs hover:bg-bg transition"
                   >
                     <span className="text-accent">
-                      <FieldIcon type={t} />
+                      <FieldIcon type={t} size={14} />
                     </span>
-                    {FIELD_TYPES[t].label}
+                    <span className="truncate">{FIELD_TYPES[t].label}</span>
                   </button>
                 ))}
               </div>
               <button
                 onClick={() => setCustom(true)}
-                className="mt-2 w-full rounded-[8px] border border-dashed border-border px-2 py-1.5 text-sm text-muted hover:border-accent hover:text-accent"
+                className="mt-3 w-full rounded-[8px] border border-dashed border-border px-2 py-1.5 text-xs text-muted hover:border-accent hover:text-accent transition"
               >
                 + Custom column
               </button>
             </>
           ) : (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-muted">Custom column</p>
+              <p className="text-xs font-semibold text-muted">Custom column</p>
               <div className="flex gap-2">
                 <input
                   value={icon}
@@ -414,13 +487,13 @@ function AddColumn({
                 <button
                   onClick={addCustom}
                   disabled={pending || !label.trim()}
-                  className="flex-1 rounded-[8px] bg-accent px-3 py-1.5 text-sm font-semibold text-accent-ink disabled:opacity-40"
+                  className="flex-1 rounded-[8px] bg-accent px-3 py-1.5 text-xs font-semibold text-accent-ink disabled:opacity-40"
                 >
                   Add
                 </button>
                 <button
                   onClick={() => setCustom(false)}
-                  className="rounded-[8px] border border-border px-3 py-1.5 text-sm"
+                  className="rounded-[8px] border border-border px-3 py-1.5 text-xs"
                 >
                   Back
                 </button>
@@ -457,7 +530,7 @@ function ColumnHeader({ field, onDone }: { field: Field; onDone: () => void }) {
         </button>
       </span>
       {menu && (
-        <div className="absolute left-3 z-20 mt-1 w-56 rounded-[12px] border border-border bg-surface p-3 text-left font-normal shadow-sm">
+        <div className="absolute left-3 z-20 mt-1 w-56 rounded-[12px] border border-border bg-surface p-3 text-left font-normal shadow-lg">
           <div className="space-y-2">
             {isCustom && (
               <input
@@ -486,7 +559,7 @@ function ColumnHeader({ field, onDone }: { field: Field; onDone: () => void }) {
                     onDone();
                   })
                 }
-                className="flex-1 rounded-[8px] bg-accent px-3 py-1.5 text-sm font-semibold text-accent-ink disabled:opacity-40"
+                className="flex-1 rounded-[8px] bg-accent px-3 py-1.5 text-xs font-semibold text-accent-ink disabled:opacity-40"
               >
                 Save
               </button>
@@ -498,7 +571,7 @@ function ColumnHeader({ field, onDone }: { field: Field; onDone: () => void }) {
                     onDone();
                   })
                 }
-                className="rounded-[8px] border border-danger/40 px-3 py-1.5 text-sm text-danger hover:bg-danger/5"
+                className="rounded-[8px] border border-danger/40 px-3 py-1.5 text-xs text-danger hover:bg-danger/5"
               >
                 Delete
               </button>
@@ -514,17 +587,27 @@ function Row({
   card,
   fields,
   baseUrl,
+  onEdit,
   onStructuralChange,
 }: {
   card: Card;
   fields: Field[];
   baseUrl: string;
+  onEdit: () => void;
   onStructuralChange: () => void;
 }) {
   const [fullName, setFullName] = useState(card.fullName);
   const [values, setValues] = useState<Record<string, string>>(card.values);
   const [, start] = useTransition();
   const cardUrl = `${baseUrl}/c/${card.publicId}`;
+  const avatar = card.values?._avatar || null;
+
+  const initials = card.fullName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w.charAt(0))
+    .join("")
+    .toUpperCase();
 
   const saveName = () => {
     if (fullName !== card.fullName)
@@ -536,15 +619,40 @@ function Row({
   };
 
   return (
-    <tr className="border-b border-border last:border-0">
-      <td className="sticky left-0 z-10 bg-surface px-2 py-1">
-        <input
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          onBlur={saveName}
-          className={`${cellCls} font-medium`}
-        />
+    <tr className="border-b border-border last:border-0 hover:bg-bg/30 transition">
+      {/* Name and Avatar column */}
+      <td className="sticky left-0 z-10 bg-surface px-3 py-2">
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={onEdit}
+            title="Edit card"
+            className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-bg text-xs font-bold text-accent transition hover:ring-2 hover:ring-accent"
+          >
+            {avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatar} alt="" className="size-full object-cover" />
+            ) : (
+              initials || "?"
+            )}
+          </button>
+          <div className="min-w-0 flex-1">
+            <input
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              onBlur={saveName}
+              className={`${cellCls} font-medium text-ink px-1.5 py-0.5`}
+            />
+            {card.title && (
+              <span className="block truncate px-1.5 text-[11px] text-muted">
+                {card.title}
+              </span>
+            )}
+          </div>
+        </div>
       </td>
+
+      {/* Dynamic fields */}
       {fields.map((f) => (
         <td key={f.id} className="px-2 py-1">
           <input
@@ -558,26 +666,28 @@ function Row({
           />
         </td>
       ))}
+
+      {/* Actions */}
       <td className="whitespace-nowrap px-3 py-1 text-right">
-        <div className="inline-flex items-center gap-1">
-          <a
-            href={`/api/card/${card.publicId}/qr.svg`}
-            download={`${card.fullName || "card"}.svg`}
-            className="rounded-[8px] border border-border px-2 py-1 text-xs font-medium hover:bg-bg"
+        <div className="inline-flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="rounded-[6px] border border-border bg-surface px-2.5 py-1 text-xs font-medium text-accent hover:border-accent hover:bg-accent/5 transition"
           >
-            SVG
-          </a>
+            Edit
+          </button>
           <a
             href={`/c/${card.publicId}`}
             target="_blank"
             rel="noreferrer"
-            className="rounded-[8px] border border-border px-2 py-1 text-xs font-medium hover:bg-bg"
+            className="rounded-[6px] border border-border px-2 py-1 text-xs font-medium text-muted hover:text-ink hover:bg-bg transition"
           >
-            Open
+            View
           </a>
           <CopyButton
             value={cardUrl}
-            label="Copy"
+            label="Link"
             className="px-2 py-1 text-xs"
           />
           <button
@@ -588,7 +698,7 @@ function Row({
                 );
             }}
             aria-label="Delete person"
-            className="rounded-[8px] border border-border px-2 py-1 text-xs text-muted hover:text-danger"
+            className="rounded-[6px] border border-border px-2 py-1 text-xs text-muted hover:text-danger hover:border-danger transition"
           >
             ✕
           </button>
