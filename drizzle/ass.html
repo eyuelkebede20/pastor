@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Add content to the vCard QR code</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #f4f5fa;
+        --card: #fff;
+        --ink: #16181d;
+        --mute: #5d6470;
+        --line: #e3e6ee;
+        --soft: #f6f7fa;
+        --blue: #5b8def;
+        --err: #e8374f;
+        --pri: #6594ff;
+        --sec: #ffffff;
+        --btn: #4b82f5;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          color-scheme: dark;
+          --bg: #14161b;
+          --card: #1d2027;
+          --ink: #eef0f4;
+          --mute: #9aa1ae;
+          --line: #2d313b;
+          --soft: #242830;
+        }
+      }
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #14161b;
+        --card: #1d2027;
+        --ink: #eef0f4;
+        --mute: #9aa1ae;
+        --line: #2d313b;
+        --soft: #242830;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-padding-top: env(safe-area-inset-top, 0px);
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Noto Sans", system-ui, sans-serif;
+        font-size: 14px;
+      }
+      header {
+        background: var(--card);
+        border-bottom: 1px solid var(--line);
+        height: 64px;
+      }
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      header .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 20px;
+      }
+      .logo i {
+        width: 22px;
+        height: 22px;
+        border: 2px solid var(--blue);
+        border-radius: 5px;
+        display: inline-block;
+      }
+      .help {
+        color: var(--blue);
+        font-weight: 500;
+      }
+      main {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 40px;
+        padding-top: 40px;
+        padding-bottom: 110px;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 18px;
+        font-weight: 600;
+      }
+      .card {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 20px 24px 24px;
+        margin-bottom: 18px;
+        box-shadow: 0 1px 3px rgba(20, 30, 60, 0.06);
+      }
+      .ch {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 20px;
+      }
+      .ico {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        background: var(--soft);
+        display: grid;
+        place-items: center;
+        color: var(--blue);
+        font-size: 20px;
+      }
+      .ch b {
+        font-size: 16px;
+        font-weight: 600;
+        display: block;
+      }
+      .ch span {
+        color: var(--mute);
+        font-size: 13px;
+      }
+      .ch .chev {
+        margin-left: auto;
+      }
+      .swatches {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 22px;
+      }
+      .sw {
+        display: flex;
+        gap: 6px;
+        padding: 7px 8px;
+        border: 1.5px solid var(--line);
+        border-radius: 10px;
+        background: var(--card);
+        cursor: pointer;
+      }
+      .sw i {
+        width: 32px;
+        height: 30px;
+        border-radius: 6px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        display: block;
+      }
+      .sw.on {
+        border-color: var(--blue);
+        box-shadow: 0 0 0 2px rgba(91, 141, 239, 0.25);
+      }
+      .colors {
+        background: var(--soft);
+        border-radius: 10px;
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 1fr 24px 1fr;
+        gap: 18px;
+        align-items: end;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      .field {
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        height: 46px;
+        padding: 0 14px;
+      }
+      .field input[type="text"] {
+        border: 0;
+        background: none;
+        outline: 0;
+        flex: 1;
+        font: inherit;
+        color: var(--ink);
+        min-width: 0;
+      }
+      .field input[type="color"] {
+        width: 22px;
+        height: 22px;
+        border: 0;
+        padding: 0;
+        background: none;
+        border-radius: 50%;
+        cursor: pointer;
+      }
+      .swap {
+        background: none;
+        border: 0;
+        color: var(--mute);
+        font-size: 18px;
+        cursor: pointer;
+        padding-bottom: 10px;
+      }
+      .sub {
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 4px 0 22px;
+      }
+      .mb {
+        margin-bottom: 18px;
+      }
+      .err {
+        border-color: var(--err);
+      }
+      .msg {
+        color: var(--err);
+        font-size: 12px;
+        margin-top: 6px;
+      }
+      .up {
+        border: 1px dashed var(--blue);
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        cursor: pointer;
+      }
+      .up .t {
+        width: 70px;
+        height: 70px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: var(--soft);
+        display: grid;
+        place-items: center;
+        color: var(--blue);
+        font-size: 26px;
+        overflow: hidden;
+      }
+      .up .t img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .up b {
+        display: block;
+        font-weight: 600;
+        font-size: 15px;
+      }
+      .up span {
+        color: var(--mute);
+        font-size: 13px;
+      }
+      .acc {
+        background: var(--soft);
+        border-radius: 8px;
+        margin-top: 12px;
+      }
+      .acc button {
+        all: unset;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 22px 24px;
+        font-weight: 600;
+        cursor: pointer;
+        box-sizing: border-box;
+      }
+      .acc button:focus-visible,
+      .soc button:focus-visible,
+      .sw:focus-visible,
+      .next:focus-visible {
+        outline: 2px solid var(--blue);
+        outline-offset: 2px;
+      }
+      .acc .body {
+        display: none;
+        padding: 0 24px 22px;
+      }
+      .acc.open .body {
+        display: block;
+      }
+      .acc .tri {
+        font-size: 9px;
+        transition: transform 0.15s;
+      }
+      .acc.open .tri {
+        transform: rotate(90deg);
+      }
+      .acc .body .field {
+        margin-bottom: 12px;
+      }
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        color: var(--ink);
+        font: inherit;
+        padding: 12px 14px;
+        min-height: 80px;
+      }
+      .soc {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px 14px;
+        margin: 12px 0 22px;
+      }
+      .soc button {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        border: 1px solid var(--line);
+        background: var(--card);
+        cursor: pointer;
+        padding: 0;
+        display: grid;
+        place-items: center;
+        position: relative;
+      }
+      .soc button i {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-style: normal;
+        font-weight: 700;
+        font-size: 13px;
+      }
+      .soc button.on {
+        box-shadow: 0 0 0 2px var(--blue);
+      }
+      .add {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--ink);
+        padding: 10px 16px;
+        border-radius: 8px;
+        font: inherit;
+        cursor: pointer;
+      }
+      .qr-name {
+        position: relative;
+      }
+      .sticky {
+        position: sticky;
+        top: 20px;
+        align-self: start;
+      }
+      .tabs {
+        display: flex;
+        border: 1.5px solid var(--blue);
+        border-radius: 30px;
+        padding: 3px;
+        width: max-content;
+        margin: 0 auto 24px;
+        background: var(--card);
+      }
+      .tabs button {
+        border: 0;
+        background: none;
+        color: var(--mute);
+        font: inherit;
+        font-weight: 500;
+        padding: 7px 18px;
+        border-radius: 24px;
+        cursor: pointer;
+      }
+      .tabs button.on {
+        background: #dfe9ff;
+        color: var(--blue);
+      }
+      .phone {
+        width: 290px;
+        margin: 0 auto;
+        border: 9px solid #0a0a0a;
+        border-radius: 42px;
+        height: 480px;
+        overflow: hidden;
+        background: #fff;
+        position: relative;
+      }
+      .phone .hero {
+        background: var(--pri);
+        height: 222px;
+        padding-top: 24px;
+        text-align: center;
+        color: var(--sec);
+        position: relative;
+      }
+      .phone .notch {
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 76px;
+        height: 20px;
+        background: #0a0a0a;
+        border-radius: 12px;
+      }
+      .phone .time {
+        position: absolute;
+        top: 10px;
+        left: 18px;
+        font-size: 8px;
+        opacity: 0.7;
+      }
+      .avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 4px solid rgba(255, 255, 255, 0.85);
+        margin: 20px auto 8px;
+        background: #e9d9c8 center/cover;
+        display: grid;
+        place-items: center;
+        font-size: 30px;
+        color: #9a7b5f;
+        font-weight: 600;
+        overflow: hidden;
+      }
+      .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .pn {
+        font-weight: 700;
+        font-size: 15px;
+      }
+      .addc {
+        display: inline-block;
+        background: #000;
+        color: #fff;
+        border-radius: 20px;
+        padding: 8px 20px;
+        font-size: 11px;
+        margin-top: 10px;
+      }
+      .rows {
+        padding: 0 10px;
+        margin-top: -30px;
+        position: relative;
+        background: #fff0;
+      }
+      .row {
+        background: #fff;
+        border-radius: 6px;
+        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.12);
+        padding: 11px 12px;
+        margin-bottom: 9px;
+        font-size: 12px;
+        color: #222;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .row em {
+        color: #999;
+        font-style: normal;
+        width: 14px;
+      }
+      .row s {
+        margin-left: auto;
+        color: #aaa;
+        text-decoration: none;
+      }
+      .phone .rows {
+        margin-top: -1px;
+        padding-top: 16px;
+        background: #fff;
+        position: absolute;
+        top: 196px;
+        left: 0;
+        right: 0;
+        border-radius: 0;
+      }
+      .phone .rows {
+        top: auto;
+        position: relative;
+        margin-top: 0;
+      }
+      .phone .hero {
+        padding-bottom: 0;
+      }
+      .rows .row:first-child {
+        margin-top: -35px;
+      }
+      .qrv {
+        display: none;
+        height: 480px;
+        width: 290px;
+        margin: 0 auto;
+        background: var(--card);
+        border-radius: 20px;
+        place-items: center;
+        border: 1px solid var(--line);
+      }
+      .qrv svg {
+        width: 200px;
+        height: 200px;
+      }
+      .preview-qr .phone {
+        display: none;
+      }
+      .preview-qr .qrv {
+        display: grid;
+      }
+      footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--card);
+        border-top: 1px solid var(--line);
+        padding: 14px 0 calc(14px + env(safe-area-inset-bottom, 0px));
+      }
+      footer .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .back {
+        color: var(--ink);
+        font-weight: 500;
+        background: none;
+        border: 0;
+        font: inherit;
+        cursor: pointer;
+      }
+      .steps {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        color: var(--mute);
+        font-size: 13px;
+      }
+      .steps span {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .steps i {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1px solid var(--line);
+        display: grid;
+        place-items: center;
+        font-style: normal;
+        font-size: 12px;
+      }
+      .steps .cur {
+        color: var(--ink);
+        font-weight: 500;
+      }
+      .steps .cur i {
+        background: var(--blue);
+        color: #fff;
+        border-color: var(--blue);
+      }
+      .next {
+        background: var(--btn);
+        color: #fff;
+        border: 0;
+        border-radius: 8px;
+        height: 46px;
+        padding: 0 70px;
+        font: inherit;
+        font-weight: 600;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      @media (max-width: 900px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+        .sticky {
+          position: static;
+          order: -1;
+        }
+        .steps {
+          display: none;
+        }
+        .next {
+          padding: 0 36px;
+        }
+        .colors {
+          grid-template-columns: 1fr;
+        }
+        .swap {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <div class="logo"><i></i>MyQRCode</div>
+        <div class="help">ⓘ Help</div>
+      </div>
+    </header>
+    <main class="wrap">
+      <div>
+        <h1>Add content to the vCard QR code</h1>
+
+        <section class="card">
+          <div class="ch">
+            <div class="ico">✎</div>
+            <div><b>Design and customize</b><span>Choose your color scheme</span></div>
+            <span class="chev">⌃</span>
+          </div>
+          <div class="swatches" id="swatches"></div>
+          <div class="colors">
+            <div>
+              <label for="pri">Primary color</label>
+              <div class="field"><input type="text" id="pri" value="#6594FF" maxlength="7" /><input type="color" id="priC" value="#6594ff" aria-label="Pick primary color" /></div>
+            </div>
+            <button class="swap" id="swap" aria-label="Swap colors">⇄</button>
+            <div>
+              <label for="sec">Secondary color</label>
+              <div class="field"><input type="text" id="sec" value="#FFFFFF" maxlength="7" /><input type="color" id="secC" value="#ffffff" aria-label="Pick secondary color" /></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="ch">
+            <div class="ico">☺</div>
+            <div><b>About you</b><span>Fill in the information you would like to showcase in your vCard</span></div>
+            <span class="chev">⌃</span>
+          </div>
+          <div class="sub">▾ Personal information</div>
+          <div class="mb">
+            <label for="name">Full name*</label>
+            <div class="field err" id="nameF"><input type="text" id="name" placeholder="e.g. Jane Cooper" /></div>
+            <div class="msg" id="nameM">This field is required and cannot be left blank.</div>
+          </div>
+          <div class="mb">
+            <label>Image</label>
+            <label class="up" for="img" style="font-weight: 400; margin: 0"
+              ><div class="t" id="imgT">🖼</div>
+              <div><b>Upload image (jpg, png, svg)</b><span>Maximum size: 5MB</span></div></label
+            >
+            <input type="file" id="img" accept="image/jpeg,image/png,image/svg+xml" hidden />
+          </div>
+
+          <div class="acc">
+            <button type="button"><span class="tri">▶</span>Contact details</button>
+            <div class="body">
+              <div class="field"><input type="text" id="phone" placeholder="Phone number" /></div>
+              <div class="field"><input type="text" placeholder="Email" /></div>
+              <div class="field"><input type="text" placeholder="Website" /></div>
+            </div>
+          </div>
+          <div class="acc">
+            <button type="button"><span class="tri">▶</span>Company details</button>
+            <div class="body">
+              <div class="field"><input type="text" placeholder="Company" /></div>
+              <div class="field"><input type="text" placeholder="Job title" /></div>
+            </div>
+          </div>
+          <div class="acc">
+            <button type="button"><span class="tri">▶</span>Summary</button>
+            <div class="body"><textarea placeholder="Write a short summary about yourself"></textarea></div>
+          </div>
+          <div class="acc">
+            <button type="button"><span class="tri">▶</span>Address</button>
+            <div class="body">
+              <div class="field"><input type="text" placeholder="Street" /></div>
+              <div class="field"><input type="text" placeholder="City" /></div>
+              <div class="field"><input type="text" placeholder="Country" /></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="ch">
+            <div class="ico">⋔</div>
+            <div><b>Social networks</b><span>Click on the icons below to add social media channels you'd like to display</span></div>
+            <span class="chev">⌃</span>
+          </div>
+          <label>Add social channels</label>
+          <div class="soc" id="soc"></div>
+          <button class="add" type="button">＋ Add more</button>
+        </section>
+
+        <section class="card">
+          <div class="ch">
+            <div class="ico">▣</div>
+            <div><b>Welcome screen</b><span>Display a custom logo while your page is loading</span></div>
+            <span class="chev">⌃</span>
+          </div>
+          <label>Image</label>
+          <label class="up" for="wel" style="font-weight: 400; margin: 0"
+            ><div class="t">🖼</div>
+            <div><b>Upload your welcome screen (jpg, png, svg)</b><span>Maximum size: 5 MB</span></div></label
+          >
+          <input type="file" id="wel" accept="image/jpeg,image/png,image/svg+xml" hidden />
+        </section>
+
+        <section class="card">
+          <div class="ch">
+            <div class="ico">✎</div>
+            <div><b>QR code name</b><span>Set a name for your QR code (optional)</span></div>
+            <span class="chev">⌃</span>
+          </div>
+          <label for="qn">Name your QR code</label>
+          <div class="field"><input type="text" id="qn" placeholder="e.g. My first QR code" /><span style="color: var(--mute)">ⓘ</span></div>
+        </section>
+      </div>
+
+      <aside class="sticky" id="side">
+        <div class="tabs"><button class="on" data-v="p">👁 Preview</button><button data-v="q">⌘ QR code</button></div>
+        <div class="phone">
+          <div class="hero">
+            <span class="time">18:45</span>
+            <div class="notch"></div>
+            <div class="avatar" id="av">
+              <img
+                alt=""
+                src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' fill='%23e8d5c0'/%3E%3Ccircle cx='40' cy='32' r='14' fill='%23c9a27e'/%3E%3Cpath d='M12 80c2-22 14-28 28-28s26 6 28 28z' fill='%23fff'/%3E%3C/svg%3E"
+              />
+            </div>
+            <div class="pn" id="pn">Jane Cooper</div>
+            <div class="addc">⊕ Add contact</div>
+          </div>
+          <div class="rows">
+            <div class="row"><em>✆</em>Contact<s>›</s></div>
+            <div class="row"><em>▤</em>Company<s>›</s></div>
+            <div class="row"><em>▥</em>Summary<s>›</s></div>
+            <div class="row"><em>♡</em>Social media<s>›</s></div>
+          </div>
+        </div>
+        <div class="qrv"><svg viewBox="0 0 21 21" shape-rendering="crispEdges" id="qrs"></svg></div>
+      </aside>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <button class="back" type="button">← Back</button>
+        <div class="steps">
+          <span><i>✓</i>Choose Type</span>›<span class="cur"><i>2</i>Add content</span>›<span><i>3</i>Customize QR design</span>
+        </div>
+        <button class="next" id="next" type="button">Next →</button>
+      </div>
+    </footer>
+
+    <script>
+      var $ = function (s) {
+        return document.querySelector(s);
+      };
+      var root = document.documentElement;
+      var presets = [
+        ["#6594FF", "#FFFFFF"],
+        ["#EEEEF0", "#222222"],
+        ["#EEEEF0", "#6594FF"],
+        ["#D8E8F6", "#6594FF"],
+        ["#B79DDB", "#FFFFFF"],
+        ["#6FCF97", "#222222"],
+        ["#FBC85E", "#FFFFFF"],
+      ];
+      var sw = $("#swatches");
+      presets.forEach(function (p, i) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "sw" + (i === 0 ? " on" : "");
+        b.setAttribute("aria-label", "Color scheme " + (i + 1));
+        b.innerHTML = '<i style="background:' + p[0] + '"></i><i style="background:' + p[1] + '"></i>';
+        b.onclick = function () {
+          setColors(p[0], p[1]);
+          document.querySelectorAll(".sw").forEach(function (x) {
+            x.classList.remove("on");
+          });
+          b.classList.add("on");
+        };
+        sw.appendChild(b);
+      });
+      function ok(v) {
+        return /^#[0-9a-f]{6}$/i.test(v);
+      }
+      function setColors(a, b) {
+        if (ok(a)) {
+          root.style.setProperty("--pri", a);
+          $("#pri").value = a.toUpperCase();
+          $("#priC").value = a.toLowerCase();
+        }
+        if (ok(b)) {
+          root.style.setProperty("--sec", b);
+          $("#sec").value = b.toUpperCase();
+          $("#secC").value = b.toLowerCase();
+        }
+      }
+      function clearOn() {
+        document.querySelectorAll(".sw").forEach(function (x) {
+          x.classList.remove("on");
+        });
+      }
+      $("#pri").oninput = function () {
+        if (ok(this.value)) {
+          setColors(this.value, $("#sec").value);
+          clearOn();
+        }
+      };
+      $("#sec").oninput = function () {
+        if (ok(this.value)) {
+          setColors($("#pri").value, this.value);
+          clearOn();
+        }
+      };
+      $("#priC").oninput = function () {
+        setColors(this.value, $("#sec").value);
+        clearOn();
+      };
+      $("#secC").oninput = function () {
+        setColors($("#pri").value, this.value);
+        clearOn();
+      };
+      $("#swap").onclick = function () {
+        setColors($("#sec").value, $("#pri").value);
+        clearOn();
+      };
+
+      $("#name").oninput = function () {
+        var v = this.value.trim();
+        $("#pn").textContent = v || "Jane Cooper";
+        $("#nameF").classList.toggle("err", !v);
+        $("#nameM").style.display = v ? "none" : "block";
+      };
+      function pick(inp, cb) {
+        inp.onchange = function () {
+          var f = inp.files[0];
+          if (!f) return;
+          if (f.size > 5 * 1024 * 1024) {
+            alert("Maximum size is 5MB.");
+            return;
+          }
+          var r = new FileReader();
+          r.onload = function () {
+            cb(r.result);
+          };
+          r.readAsDataURL(f);
+        };
+      }
+      pick($("#img"), function (u) {
+        $("#imgT").innerHTML = '<img alt="" src="' + u + '">';
+        $("#av").innerHTML = '<img alt="" src="' + u + '">';
+      });
+
+      document.querySelectorAll(".acc button").forEach(function (b) {
+        b.onclick = function () {
+          b.parentNode.classList.toggle("open");
+        };
+      });
+
+      var nets = [
+        ["f", "#1877f2"],
+        ["◎", "#e1306c"],
+        ["t", "#1da1f2"],
+        ["X", "#000"],
+        ["X", "#000"],
+        ["W", "#25d366"],
+        ["♪", "#333"],
+        ["S", "#fffc00"],
+        ["▶", "#f00"],
+        ["➤", "#27a7e7"],
+        ["m", "#0084ff"],
+        ["Y", "#d32323"],
+        ["G", "#ea4335"],
+        ["P", "#e60023"],
+        ["in", "#0a66c2"],
+        ["X", "#00605e"],
+        ["◍", "#ea4c89"],
+        ["T", "#34e0a1"],
+        ["L", "#06c755"],
+        ["r", "#ff4500"],
+        ["V", "#7360f2"],
+        ["t", "#35465c"],
+        ["⌥", "#24292f"],
+        ["D", "#eb1700"],
+        ["VK", "#07f"],
+        ["✉", "#2fa4e7"],
+        ["O", "#0078d4"],
+        ["", "#000"],
+        ["M", "#ea4335"],
+        ["N", "#e50914"],
+        ["◐", "#f7931e"],
+      ];
+      var soc = $("#soc");
+      nets.forEach(function (n, i) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("aria-label", "Add social channel " + (i + 1));
+        b.innerHTML = '<i style="background:' + n[1] + ";" + (n[1] === "#fffc00" ? "color:#000" : "") + '">' + n[0] + "</i>";
+        b.onclick = function () {
+          b.classList.toggle("on");
+        };
+        soc.appendChild(b);
+      });
+
+      document.querySelectorAll(".tabs button").forEach(function (b) {
+        b.onclick = function () {
+          document.querySelectorAll(".tabs button").forEach(function (x) {
+            x.classList.remove("on");
+          });
+          b.classList.add("on");
+          $("#side").classList.toggle("preview-qr", b.dataset.v === "q");
+        };
+      });
+
+      var s = 7,
+        seed = 7,
+        out = "";
+      function rnd() {
+        seed = (seed * 9301 + 49297) % 233280;
+        return seed / 233280;
+      }
+      function finder(x, y) {
+        out +=
+          '<rect x="' +
+          x +
+          '" y="' +
+          y +
+          '" width="7" height="7" fill="#111"/><rect x="' +
+          (x + 1) +
+          '" y="' +
+          (y + 1) +
+          '" width="5" height="5" fill="#fff"/><rect x="' +
+          (x + 2) +
+          '" y="' +
+          (y + 2) +
+          '" width="3" height="3" fill="#111"/>';
+      }
+      out = '<rect width="21" height="21" fill="#fff"/>';
+      for (var y = 0; y < 21; y++)
+        for (var x = 0; x < 21; x++) {
+          var f = (x < 8 && y < 8) || (x > 12 && y < 8) || (x < 8 && y > 12);
+          if (!f && rnd() > 0.52) out += '<rect x="' + x + '" y="' + y + '" width="1" height="1" fill="#111"/>';
+        }
+      finder(0, 0);
+      finder(14, 0);
+      finder(0, 14);
+      $("#qrs").innerHTML = out;
+
+      $("#next").onclick = function () {
+        if (!$("#name").value.trim()) {
+          $("#name").focus();
+          $("#nameF").classList.add("err");
+          $("#nameM").style.display = "block";
+        }
+      };
+    </script>
+  </body>
+</html>

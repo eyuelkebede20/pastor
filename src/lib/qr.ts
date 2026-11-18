@@ -110,6 +110,10 @@ export function wifiString(input: {
   )};;`;
 }
 
+function escapeVcf(value: string) {
+  return value.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/([,;])/g, "\\$1");
+}
+
 export function vcardString(input: {
   name: string;
   phone?: string;
@@ -117,22 +121,62 @@ export function vcardString(input: {
   company?: string;
   title?: string;
   website?: string;
+  street?: string;
+  city?: string;
+  country?: string;
   address?: string;
   note?: string;
+  avatarUrl?: string;
+  socials?: Record<string, string>;
+  cardUrl?: string;
 }) {
-  return [
-    "BEGIN:VCARD",
-    "VERSION:3.0",
-    input.name && `FN:${input.name}`,
-    input.company && `ORG:${input.company}`,
-    input.title && `TITLE:${input.title}`,
-    input.phone && `TEL;TYPE=CELL:${input.phone}`,
-    input.email && `EMAIL:${input.email}`,
-    input.website && `URL:${input.website}`,
-    input.address && `ADR;TYPE=WORK:;;${input.address};;;;`,
-    input.note && `NOTE:${input.note}`,
-    "END:VCARD",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const lines: string[] = ["BEGIN:VCARD", "VERSION:3.0"];
+
+  if (input.name) {
+    lines.push(`FN:${escapeVcf(input.name)}`);
+    const parts = input.name.trim().split(/\s+/);
+    if (parts.length > 1) {
+      const last = parts.pop();
+      const first = parts.join(" ");
+      lines.push(`N:${escapeVcf(last!)};${escapeVcf(first)};;;`);
+    } else {
+      lines.push(`N:;${escapeVcf(input.name)};;;`);
+    }
+  }
+
+  if (input.company) lines.push(`ORG:${escapeVcf(input.company)}`);
+  if (input.title) lines.push(`TITLE:${escapeVcf(input.title)}`);
+  if (input.phone) lines.push(`TEL;TYPE=CELL,VOICE:${escapeVcf(input.phone)}`);
+  if (input.email) lines.push(`EMAIL;TYPE=INTERNET:${escapeVcf(input.email)}`);
+  if (input.website) lines.push(`URL:${escapeVcf(input.website)}`);
+
+  const street = input.street?.trim() || "";
+  const city = input.city?.trim() || "";
+  const country = input.country?.trim() || "";
+  if (street || city || country) {
+    lines.push(`ADR;TYPE=WORK:;;${escapeVcf(street)};${escapeVcf(city)};;;${escapeVcf(country)}`);
+  } else if (input.address?.trim()) {
+    lines.push(`ADR;TYPE=WORK:;;${escapeVcf(input.address.trim())};;;;`);
+  }
+
+  if (input.note?.trim()) lines.push(`NOTE:${escapeVcf(input.note.trim())}`);
+
+  if (input.socials) {
+    for (const [net, val] of Object.entries(input.socials)) {
+      if (val && val.trim()) {
+        lines.push(`X-SOCIALPROFILE;TYPE=${escapeVcf(net)}:${escapeVcf(val.trim())}`);
+      }
+    }
+  }
+
+  if (input.cardUrl) {
+    lines.push(`URL:${escapeVcf(input.cardUrl)}`);
+  }
+
+  if (input.avatarUrl && /^https?:\/\//i.test(input.avatarUrl)) {
+    lines.push(`PHOTO;VALUE=URI:${escapeVcf(input.avatarUrl)}`);
+  }
+
+  lines.push("END:VCARD");
+  return lines.join("\n");
 }

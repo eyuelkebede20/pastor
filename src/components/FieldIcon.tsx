@@ -1,7 +1,39 @@
 import type { ReactNode } from "react";
 
-// Simple monochrome glyphs (currentColor) for each builtin field type. Custom
-// fields render their chosen emoji instead.
+// Official circular brand SVGs from public/icons/social/
+export const SOCIAL_ICON_PATHS: Record<string, string> = {
+  facebook: "/icons/social/facebook.svg",
+  instagram: "/icons/social/instagram.svg",
+  whatsapp: "/icons/social/whatsapp.svg",
+  x: "/icons/social/x.svg",
+  twitter: "/icons/social/x.svg",
+  youtube: "/icons/social/youtube.svg",
+  linkedin: "/icons/social/linkedin.svg",
+  github: "/icons/social/github.svg",
+  tiktok: "/icons/social/tiktok.svg",
+  telegram: "/icons/social/telegram.svg",
+  snapchat: "/icons/social/snapchat.svg",
+  pinterest: "/icons/social/pinterest.svg",
+  reddit: "/icons/social/reddit.svg",
+  dribbble: "/icons/social/dribbble.svg",
+  signal: "/icons/social/signal.svg",
+  messenger: "/icons/social/messenger.svg",
+  tripadvisor: "/icons/social/tripadvisor.svg",
+  yelp: "/icons/social/yelp.svg",
+  googlereviews: "/icons/social/google-reviews.svg",
+  tumblr: "/icons/social/tumblr.svg",
+  viber: "/icons/social/viber.svg",
+  line: "/icons/social/line.svg",
+  doordash: "/icons/social/doordash.svg",
+  xing: "/icons/social/xing.svg",
+  vk: "/icons/social/vk.svg",
+  apple: "/icons/social/apple.svg",
+  netflix: "/icons/social/netflix.svg",
+  outlook: "/icons/social/outlook.svg",
+  gmail: "/icons/social/gmail.svg",
+  web: "/icons/social/web.svg",
+  website: "/icons/social/web.svg",
+};
 
 function Svg({ children, size = 18 }: { children: ReactNode; size?: number }) {
   return (
@@ -152,12 +184,30 @@ export function FieldIcon({
   icon?: string | null;
   size?: number;
 }) {
-  if (type === "custom" || !GLYPHS[type]) {
+  const norm = type.toLowerCase();
+
+  // If there's an official circular brand SVG, use it directly!
+  if (SOCIAL_ICON_PATHS[norm]) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={SOCIAL_ICON_PATHS[norm]}
+        alt={type}
+        width={size}
+        height={size}
+        style={{ width: size, height: size }}
+        className="inline-block shrink-0 rounded-full object-contain"
+        loading="lazy"
+      />
+    );
+  }
+
+  if (type === "custom" || !GLYPHS[norm]) {
     return (
       <span style={{ fontSize: size - 2, lineHeight: 1 }} aria-hidden>
         {icon || "🔗"}
       </span>
     );
   }
-  return <Svg size={size}>{GLYPHS[type]}</Svg>;
+  return <Svg size={size}>{GLYPHS[norm]}</Svg>;
 }

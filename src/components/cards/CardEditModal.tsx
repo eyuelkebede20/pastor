@@ -3,7 +3,7 @@
 import { useId, useState, useTransition } from "react";
 import { Label } from "@/components/ui";
 import { FieldIcon } from "@/components/FieldIcon";
-import { FIELD_TYPES, type FieldType } from "@/lib/card-fields";
+import { FIELD_TYPES, VCARD_COLOR_PRESETS, type FieldType } from "@/lib/card-fields";
 import { processAvatarFile } from "@/lib/avatar";
 import { createCardWithDetails, deleteCard, saveCard } from "@/actions/cards";
 
@@ -49,6 +49,12 @@ export function CardEditModal({
   const [avatarUrl, setAvatarUrl] = useState(
     initialCard?.values?._avatar ?? "",
   );
+  const [priColor, setPriColor] = useState(
+    initialCard?.values?._priColor ?? "#6594FF",
+  );
+  const [secColor, setSecColor] = useState(
+    initialCard?.values?._secColor ?? "#FFFFFF",
+  );
   const [values, setValues] = useState<Record<string, string>>(
     initialCard?.values ?? {},
   );
@@ -80,6 +86,12 @@ export function CardEditModal({
       return;
     }
 
+    const payloadValues: Record<string, string> = {
+      ...values,
+      _priColor: priColor,
+      _secColor: secColor,
+    };
+
     start(async () => {
       try {
         if (isEditing && initialCard?.id) {
@@ -88,7 +100,7 @@ export function CardEditModal({
             fullName,
             title,
             avatarUrl,
-            values,
+            values: payloadValues,
           });
           if (res.ok) {
             onSaved();
@@ -102,7 +114,7 @@ export function CardEditModal({
             fullName,
             title,
             avatarUrl,
-            values,
+            values: payloadValues,
           });
           if (res.ok) {
             onSaved();
@@ -235,6 +247,89 @@ export function CardEditModal({
                 </div>
               </div>
 
+              {/* Color Scheme (Inspired by ass.html) */}
+              <div className="space-y-2.5 rounded-[10px] border border-border bg-bg/40 p-3.5">
+                <div className="flex items-center justify-between">
+                  <Label>Color Scheme</Label>
+                  <span className="text-[11px] text-muted">Primary & Secondary</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {VCARD_COLOR_PRESETS.map((preset, idx) => {
+                    const isSelected =
+                      priColor.toLowerCase() === preset.fg.toLowerCase() &&
+                      secColor.toLowerCase() === preset.bg.toLowerCase();
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setPriColor(preset.fg);
+                          setSecColor(preset.bg);
+                        }}
+                        title={preset.label}
+                        className={`flex items-center gap-1.5 rounded-[8px] border p-1.5 transition ${
+                          isSelected
+                            ? "border-accent ring-2 ring-accent/30 bg-accent/5 shadow-xs"
+                            : "border-border hover:border-muted"
+                        }`}
+                      >
+                        <div
+                          className="size-4.5 rounded-[3px] border border-black/10"
+                          style={{ backgroundColor: preset.fg }}
+                        />
+                        <div
+                          className="size-4.5 rounded-[3px] border border-black/10"
+                          style={{ backgroundColor: preset.bg }}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="flex-1">
+                    <label className="text-[11px] font-medium text-muted">
+                      Primary color
+                    </label>
+                    <div className="mt-1 flex items-center gap-2 rounded-[8px] border border-border bg-surface px-2 py-1">
+                      <input
+                        type="color"
+                        value={priColor}
+                        onChange={(e) => setPriColor(e.target.value)}
+                        className="size-6 cursor-pointer rounded-[4px] border-none bg-transparent"
+                      />
+                      <input
+                        type="text"
+                        value={priColor.toUpperCase()}
+                        onChange={(e) => setPriColor(e.target.value)}
+                        maxLength={7}
+                        className="w-full bg-transparent font-mono text-xs uppercase outline-none text-ink"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[11px] font-medium text-muted">
+                      Secondary color
+                    </label>
+                    <div className="mt-1 flex items-center gap-2 rounded-[8px] border border-border bg-surface px-2 py-1">
+                      <input
+                        type="color"
+                        value={secColor}
+                        onChange={(e) => setSecColor(e.target.value)}
+                        className="size-6 cursor-pointer rounded-[4px] border-none bg-transparent"
+                      />
+                      <input
+                        type="text"
+                        value={secColor.toUpperCase()}
+                        onChange={(e) => setSecColor(e.target.value)}
+                        maxLength={7}
+                        className="w-full bg-transparent font-mono text-xs uppercase outline-none text-ink"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Dynamic Field Inputs */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between border-t border-border pt-4">
@@ -260,11 +355,11 @@ export function CardEditModal({
                       return (
                         <div key={f.id}>
                           <label className="flex items-center gap-1.5 text-xs font-medium text-ink">
-                            <span className="text-muted">
+                            <span className="shrink-0">
                               <FieldIcon
                                 type={f.type}
                                 icon={f.icon}
-                                size={14}
+                                size={16}
                               />
                             </span>
                             <span>{f.label}</span>
@@ -288,76 +383,87 @@ export function CardEditModal({
               </div>
             </div>
 
-            {/* Right: Live Virtual Card Preview */}
+            {/* Right: Live Virtual Card Preview (Matching ass.html) */}
             <div className="flex flex-col items-center justify-start border-t border-border pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
               <p className="mb-2 w-full text-center text-xs font-medium text-muted">
                 Live Card Preview
               </p>
 
               {/* Virtual ID Card mockup */}
-              <div className="w-full max-w-[260px] overflow-hidden rounded-[16px] border border-border bg-bg/80 shadow-md">
-                {/* Accent Banner */}
-                <div className="h-14 bg-accent flex items-center justify-end px-3">
-                  <span className="text-[10px] font-semibold text-accent-ink uppercase tracking-wider">
-                    {companyName}
-                  </span>
-                </div>
-
-                {/* Card Content */}
-                <div className="px-4 pb-4">
+              <div className="w-full max-w-[270px] overflow-hidden rounded-[24px] border border-border bg-surface shadow-xl">
+                {/* Hero Banner with Custom Theme Colors */}
+                <div
+                  className="pt-6 pb-5 px-4 text-center relative transition-colors"
+                  style={{ backgroundColor: priColor, color: secColor }}
+                >
                   {/* Avatar */}
-                  <div className="-mt-8 flex items-center">
-                    <div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-surface bg-ink text-xl font-bold text-accent-ink shadow">
-                      {avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={avatarUrl}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        initials || "?"
-                      )}
-                    </div>
+                  <div className="size-16 rounded-full border-3 border-white/85 mx-auto overflow-hidden shadow-md flex items-center justify-center bg-zinc-900 text-white font-bold text-lg">
+                    {avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={avatarUrl}
+                        alt=""
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      initials || "?"
+                    )}
                   </div>
 
                   {/* Name & Title */}
-                  <div className="mt-3">
-                    <h4 className="truncate font-display text-base font-bold text-ink">
+                  <div className="mt-2.5">
+                    <h4 className="truncate font-display text-base font-bold">
                       {fullName || "Person Name"}
                     </h4>
-                    <p className="truncate text-xs text-muted">
+                    <p className="truncate text-xs opacity-90 font-medium">
                       {title || "Job Title"}
                     </p>
+                    {companyName && (
+                      <span className="mt-1 inline-block text-[10px] font-semibold opacity-80 uppercase tracking-wider">
+                        {companyName}
+                      </span>
+                    )}
                   </div>
+                </div>
 
-                  {/* Field badges summary */}
-                  <div className="mt-4 space-y-1.5 border-t border-border/60 pt-3">
+                {/* Card Content & Field badges */}
+                <div className="p-3 bg-bg/50 space-y-2">
+                  <div className="space-y-1.5">
                     {fields
                       .map((f) => ({ field: f, val: values[f.id] }))
                       .filter(({ val }) => val && val.trim().length > 0)
-                      .slice(0, 3)
+                      .slice(0, 5)
                       .map(({ field, val }) => (
                         <div
                           key={field.id}
-                          className="flex items-center gap-2 rounded-[6px] border border-border/80 bg-surface px-2 py-1 text-[11px]"
+                          className="flex items-center gap-2 rounded-[8px] border border-border/80 bg-surface px-2.5 py-1.5 text-[11px] shadow-2xs"
                         >
-                          <span className="text-accent">
-                            <FieldIcon
-                              type={field.type}
-                              icon={field.icon}
-                              size={12}
-                            />
+                          <FieldIcon
+                            type={field.type}
+                            icon={field.icon}
+                            size={18}
+                          />
+                          <span className="truncate text-ink font-medium">
+                            {val}
                           </span>
-                          <span className="truncate text-muted">{val}</span>
                         </div>
                       ))}
-                    {Object.values(values).filter((v) => v && v.trim()).length >
-                      3 && (
+                    {Object.values(values).filter(
+                      (v) =>
+                        v &&
+                        v.trim() &&
+                        !v.startsWith("#") &&
+                        !v.startsWith("data:image/"),
+                    ).length > 5 && (
                       <p className="text-center text-[10px] text-muted">
                         +
-                        {Object.values(values).filter((v) => v && v.trim())
-                          .length - 3}{" "}
+                        {Object.values(values).filter(
+                          (v) =>
+                            v &&
+                            v.trim() &&
+                            !v.startsWith("#") &&
+                            !v.startsWith("data:image/"),
+                        ).length - 5}{" "}
                         more channels
                       </p>
                     )}

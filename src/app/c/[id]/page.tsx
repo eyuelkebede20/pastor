@@ -92,6 +92,9 @@ export default async function CardPage({
   const { card, fields } = data;
   const values = card.values ?? {};
   const avatar = values["_avatar"] || null;
+  const priColor = values["_priColor"] || "#6594FF";
+  const secColor = values["_secColor"] || "#FFFFFF";
+
   const rows = fields
     .map((f) => ({ field: f, value: (values[f.id] ?? "").trim() }))
     .filter((r) => r.value.length > 0);
@@ -104,53 +107,80 @@ export default async function CardPage({
     .toUpperCase();
 
   return (
-    <div className="mx-auto max-w-md py-4">
-      <div className="overflow-hidden rounded-[16px] border border-border bg-surface">
-        {/* accent header */}
-        <div className="h-20 bg-accent" />
-        <div className="px-6 pb-6">
-          <div className="-mt-10 flex items-end gap-4">
-            <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-surface bg-ink text-2xl font-bold text-accent-ink shadow-sm">
-              {avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={avatar}
-                  alt={card.fullName}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                initials || "?"
-              )}
-            </div>
+    <div className="mx-auto max-w-md py-4 sm:py-6">
+      <div className="overflow-hidden rounded-[24px] border border-border bg-surface shadow-xl">
+        {/* Hero Banner with Custom Theme Colors from ass.html */}
+        <div
+          className="pt-8 pb-7 px-6 text-center relative transition-colors shadow-xs"
+          style={{ backgroundColor: priColor, color: secColor }}
+        >
+          {/* Avatar */}
+          <div className="size-24 rounded-full border-4 border-white/85 mx-auto overflow-hidden shadow-lg flex items-center justify-center bg-zinc-950 text-white font-bold text-2xl">
+            {avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatar}
+                alt={card.fullName}
+                className="size-full object-cover"
+              />
+            ) : (
+              initials || "?"
+            )}
           </div>
 
-          <div className="mt-4">
-            <h1 className="font-display text-2xl font-bold">{card.fullName}</h1>
-            {card.title && <p className="text-muted">{card.title}</p>}
+          <div className="mt-3.5">
+            <h1 className="font-display text-2xl font-bold tracking-tight">
+              {card.fullName}
+            </h1>
+            {card.title && (
+              <p className="mt-0.5 text-sm font-medium opacity-90">
+                {card.title}
+              </p>
+            )}
             {card.company && (
-              <p className="mt-1 text-sm font-medium text-accent">
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wider opacity-80">
                 {card.company}
               </p>
             )}
           </div>
 
+          <a
+            href={`/api/card/${id}/vcard.vcf`}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-black/90 px-5 py-2 text-xs font-semibold text-white shadow-md hover:bg-black transition active:scale-95"
+          >
+            <span>⊕</span>
+            <span>Save to contacts</span>
+          </a>
+        </div>
+
+        {/* Content Body */}
+        <div className="p-5 sm:p-6 space-y-4">
           {rows.length > 0 && (
-            <ul className="mt-6 space-y-2">
+            <ul className="space-y-2">
               {rows.map(({ field, value }) => {
                 const href = hrefForField(field.type, value);
                 const inner = (
                   <>
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] border border-border bg-bg text-accent">
-                      <FieldIcon type={field.type} icon={field.icon} />
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-[10px] border border-border/80 bg-bg/60">
+                      <FieldIcon
+                        type={field.type}
+                        icon={field.icon}
+                        size={24}
+                      />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-xs text-muted">
+                      <span className="block text-xs font-medium text-muted">
                         {field.label}
                       </span>
-                      <span className="block truncate text-sm font-medium">
+                      <span className="block truncate text-sm font-semibold text-ink">
                         {value}
                       </span>
                     </span>
+                    {href && (
+                      <span className="text-muted text-xs font-semibold pr-1">
+                        ›
+                      </span>
+                    )}
                   </>
                 );
                 return (
@@ -160,12 +190,12 @@ export default async function CardPage({
                         href={href}
                         target={href.startsWith("http") ? "_blank" : undefined}
                         rel="noreferrer"
-                        className="flex items-center gap-3 rounded-[10px] border border-border px-3 py-2.5 transition-colors hover:border-accent hover:bg-accent/5"
+                        className="flex items-center gap-3 rounded-[12px] border border-border px-3.5 py-2.5 transition-colors hover:border-accent hover:bg-accent/5 shadow-2xs"
                       >
                         {inner}
                       </a>
                     ) : (
-                      <div className="flex items-center gap-3 rounded-[10px] border border-border px-3 py-2.5">
+                      <div className="flex items-center gap-3 rounded-[12px] border border-border px-3.5 py-2.5 shadow-2xs">
                         {inner}
                       </div>
                     )}
@@ -175,24 +205,21 @@ export default async function CardPage({
             </ul>
           )}
 
-          <div className="mt-6 flex flex-col gap-2">
-            <a
-              href={`/api/card/${id}/vcard.vcf`}
-              className="w-full rounded-[8px] bg-accent px-4 py-2.5 text-center text-sm font-semibold text-accent-ink hover:opacity-90"
-            >
-              Save to contacts
-            </a>
-            <details className="rounded-[8px] border border-border">
-              <summary className="cursor-pointer list-none px-4 py-2.5 text-center text-sm font-medium text-muted hover:text-ink">
-                Show QR code
+          <div className="pt-2 flex flex-col gap-2">
+            <details className="rounded-[10px] border border-border bg-bg/30">
+              <summary className="cursor-pointer list-none px-4 py-2.5 text-center text-xs font-semibold text-muted hover:text-ink transition">
+                Show QR Code
               </summary>
-              <div className="flex justify-center border-t border-border p-4">
+              <div className="flex flex-col items-center justify-center border-t border-border p-4 bg-surface">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`/api/card/${id}/qr.svg`}
                   alt="QR code for this card"
                   className="h-44 w-44"
                 />
+                <p className="mt-2 text-xs text-muted">
+                  Scan to view or share this digital card
+                </p>
               </div>
             </details>
           </div>
