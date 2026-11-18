@@ -6,12 +6,12 @@ const defaultAuthSecret =
   "opensd23r23f2@#$#@Fsdafasdfs#@#$#F#@FDFDF#fef233[['[.[l[l[[[]]]]]]']";
 const defaultAuthUrl = "https://pastor.senaycreatives.com";
 
-const baseURL =
-  process.env.BETTER_AUTH_URL && !process.env.BETTER_AUTH_URL.includes("localhost")
-    ? process.env.BETTER_AUTH_URL
-    : process.env.NODE_ENV === "production"
-      ? defaultAuthUrl
-      : process.env.BETTER_AUTH_URL || "http://localhost:3000";
+let rawAuthUrl = process.env.BETTER_AUTH_URL;
+if (!rawAuthUrl || rawAuthUrl.includes("localhost")) {
+  rawAuthUrl = process.env.NODE_ENV === "production" ? defaultAuthUrl : "http://localhost:3000";
+}
+// Strip any trailing slashes from baseURL
+const baseURL = rawAuthUrl.replace(/\/+$/, "");
 
 const secret = process.env.BETTER_AUTH_SECRET || defaultAuthSecret;
 
@@ -21,6 +21,7 @@ export const auth = betterAuth({
   secret,
   trustedOrigins: [
     "https://pastor.senaycreatives.com",
+    "https://pastor.senaycreatives.com/",
     "http://pastor.senaycreatives.com",
     "http://localhost:3000",
   ],

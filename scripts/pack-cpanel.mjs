@@ -199,7 +199,14 @@ if (!process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_APP_URL.includes
 if (!process.env.BETTER_AUTH_URL || process.env.BETTER_AUTH_URL.includes('localhost')) {
   process.env.BETTER_AUTH_URL = 'https://pastor.senaycreatives.com';
 }
-if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('user:pass@127.0.0.1') || process.env.DATABASE_URL.includes('user:pass@localhost')) {
+process.env.BETTER_AUTH_URL = process.env.BETTER_AUTH_URL.replace(/\\/+$/, '');
+
+if (
+  !process.env.DATABASE_URL ||
+  !process.env.DATABASE_URL.includes('neon.tech') ||
+  process.env.DATABASE_URL.includes('0911434441') ||
+  process.env.DATABASE_URL.includes('user:pass@')
+) {
   process.env.DATABASE_URL = defaultDbUrl;
 }
 if (!process.env.BETTER_AUTH_SECRET) {

@@ -8,8 +8,9 @@ const defaultNeonUrl =
 let rawDatabaseUrl = process.env.DATABASE_URL;
 if (
   !rawDatabaseUrl ||
-  rawDatabaseUrl.includes("user:pass@127.0.0.1") ||
-  rawDatabaseUrl.includes("user:pass@localhost")
+  !rawDatabaseUrl.includes("neon.tech") ||
+  rawDatabaseUrl.includes("0911434441") ||
+  rawDatabaseUrl.includes("user:pass@")
 ) {
   rawDatabaseUrl = defaultNeonUrl;
 }
