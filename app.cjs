@@ -91,7 +91,7 @@ loadEnvFile(path.join(appDir, '.env'));
 
 // 5. Production defaults for pastor.senaycreatives.com
 const defaultDbUrl = 'postgresql://neondb_owner:npg_nW1YXcMSmKE5@ep-soft-frost-atx0u8e5-pooler.c-9.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require';
-const defaultAuthSecret = 'opensd23r23f2@#$#@Fsdafasdfs#@#$#F#@FDFDF#fef233[['[.[l[l[[[]]]]]]']';
+const defaultAuthSecret = "opensd23r23f2@#$#@Fsdafasdfs#@#$#F#@FDFDF#fef233[['[.[l[l[[[]]]]]]']";
 
 if (!process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
   process.env.NEXT_PUBLIC_APP_URL = 'https://pastor.senaycreatives.com';
