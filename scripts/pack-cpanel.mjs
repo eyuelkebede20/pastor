@@ -111,12 +111,14 @@ if (fs.existsSync(staticDir)) {
   copyDirSafe(staticDir, targetStaticDir);
 }
 
-// 5. Copy public directory into bundleDir/public if present
+// 5. Copy public directory into bundleDir/public and rootAppDir/public for LiteSpeed & Next.js
 const publicDir = path.join(rootDir, 'public');
 if (fs.existsSync(publicDir)) {
-  console.log('📦 Copying public/ into pastor/app/public...');
+  console.log('📦 Copying public/ into pastor/app/public and pastor/public...');
   const targetPublicDir = path.join(bundleDir, 'public');
   copyDirSafe(publicDir, targetPublicDir);
+  const rootPublicDir = path.join(rootAppDir, 'public');
+  copyDirSafe(publicDir, rootPublicDir);
 }
 
 // 6. Ensure root files in dist-cpanel/pastor/
