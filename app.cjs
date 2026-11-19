@@ -4,92 +4,14 @@
 const path = require('node:path');
 const fs = require('node:fs');
 
-// 1. Ensure logs and tmp exist immediately
-const logsDir = path.join(__dirname, 'logs');
-const tmpDir = path.join(__dirname, 'tmp');
-try { if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true }); } catch (_) {}
-try { if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true }); } catch (_) {}
-
-const errorLog = path.join(logsDir, 'startup-error.log');
-const appLog = path.join(logsDir, 'pastor-app.log');
-
-function logToFile(filePath, message) {
-  try {
-    fs.appendFileSync(filePath, `[ ${new Date().toISOString()} ] ${message}\n`, 'utf8');
-  } catch (_) {}
-}
-
-logToFile(appLog, `Pastor shim booting (PID: ${process.pid}, Node: ${process.version}, CWD: ${process.cwd()}, PORT: ${process.env.PORT || 'unset'})`);
-
-// Intercept console.error and console.warn so Next.js startServer errors are captured
-const origConsoleError = console.error;
-console.error = function(...args) {
-  const msg = args.map(a => (a && a.stack) || (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
-  logToFile(errorLog, `[Console Error] ${msg}`);
-  logToFile(appLog, `[Console Error] ${msg}`);
-  return origConsoleError.apply(this, args);
-};
-
-const origConsoleWarn = console.warn;
-console.warn = function(...args) {
-  const msg = args.map(a => (a && a.stack) || (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
-  logToFile(appLog, `[Console Warn] ${msg}`);
-  return origConsoleWarn.apply(this, args);
-};
-
-// Intercept process.exit to record failure exit codes and stack traces
-const origExit = process.exit;
-process.exit = function(code) {
-  const stack = new Error().stack;
-  logToFile(appLog, `process.exit(${code}) called:\n${stack}`);
-  if (code && code !== 0) {
-    logToFile(errorLog, `process.exit(${code}) called:\n${stack}`);
-  }
-  return origExit.apply(this, arguments);
-};
-
-process.on('uncaughtException', (err) => {
-  logToFile(errorLog, `[Uncaught Exception]\n${err.stack || err}`);
-  logToFile(appLog, `[Uncaught Exception]\n${err.stack || err}`);
-  origConsoleError('[Uncaught Exception]', err);
-});
-
-process.on('unhandledRejection', (reason) => {
-  logToFile(errorLog, `[Unhandled Rejection]\n${(reason && reason.stack) || reason}`);
-  logToFile(appLog, `[Unhandled Rejection]\n${(reason && reason.stack) || reason}`);
-  origConsoleError('[Unhandled Rejection]', reason);
-});
-
-// 2. Configure environment and prevent CageFS 0.0.0.0 network bind failure
 process.env.NODE_ENV = process.env.NODE_ENV || 'production';
 process.env.NODE_OPTIONS = process.env.NODE_OPTIONS || '--disable-wasm-trap-handler';
-
-// CageFS on shared hosting restricts binding to 0.0.0.0.
-// Use 127.0.0.1 so Passenger or local proxy connects cleanly.
-if (!process.env.HOSTNAME || process.env.HOSTNAME === '0.0.0.0') {
-  process.env.HOSTNAME = '127.0.0.1';
-}
+process.env.HOSTNAME = '0.0.0.0';
 
 const appDir = path.resolve(__dirname, 'app');
 const appNodeModules = path.join(appDir, 'node_modules');
 const rootNodeModules = path.join(__dirname, 'node_modules');
 const candidatePaths = [appNodeModules, rootNodeModules];
-
-// Scan app/node_modules/.pnpm/*/node_modules for pre-bundled dependencies (next, react, etc.)
-const pnpmBase = path.join(appNodeModules, '.pnpm');
-if (fs.existsSync(pnpmBase)) {
-  try {
-    const pnpmPackages = fs.readdirSync(pnpmBase);
-    for (const pkg of pnpmPackages) {
-      const pkgNodeModules = path.join(pnpmBase, pkg, 'node_modules');
-      if (fs.existsSync(pkgNodeModules)) {
-        candidatePaths.push(pkgNodeModules);
-      }
-    }
-  } catch (e) {
-    logToFile(appLog, `Error scanning .pnpm: ${e.message}`);
-  }
-}
 
 // Search for CloudLinux nodevenv lib/node_modules if present
 try {
@@ -104,11 +26,42 @@ try {
   }
 } catch (_) {}
 
-// Prepend all candidate module paths to NODE_PATH
+// 1. Prepend candidate module paths to NODE_PATH
 process.env.NODE_PATH = candidatePaths.concat(process.env.NODE_PATH || '').filter(Boolean).join(path.delimiter);
 require('node:module').Module._initPaths();
 
-// 3. Load environment variables from root .env or app/.env (zero dependency parser)
+// 2. Switch working directory to app/ so relative paths and process.cwd() resolve cleanly
+try {
+  if (fs.existsSync(appDir)) {
+    process.chdir(appDir);
+  }
+} catch (e) {
+  console.warn('Could not chdir to app directory:', e);
+}
+
+// 3. Ensure logs and tmp exist
+const logsDir = path.join(__dirname, 'logs');
+const tmpDir = path.join(__dirname, 'tmp');
+try { if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true }); } catch (_) {}
+try { if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true }); } catch (_) {}
+
+process.on('uncaughtException', (err) => {
+  try {
+    const errorLog = path.join(logsDir, 'startup-error.log');
+    fs.appendFileSync(errorLog, '[ ' + new Date().toISOString() + ' ] Uncaught Exception:\n' + (err.stack || err) + '\n', 'utf8');
+  } catch (_) {}
+  console.error('[Uncaught Exception]', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  try {
+    const errorLog = path.join(logsDir, 'startup-error.log');
+    fs.appendFileSync(errorLog, '[ ' + new Date().toISOString() + ' ] Unhandled Rejection:\n' + ((reason && reason.stack) || reason) + '\n', 'utf8');
+  } catch (_) {}
+  console.error('[Unhandled Rejection]', reason);
+});
+
+// 4. Load environment variables from root .env or app/.env (zero dependency parser)
 function loadEnvFile(envPath) {
   if (!fs.existsSync(envPath)) return;
   try {
@@ -129,14 +82,14 @@ function loadEnvFile(envPath) {
       }
     }
   } catch (err) {
-    logToFile(appLog, `Could not read env file ${envPath}: ${err.message}`);
+    console.warn('[app.cjs] Could not read env file ' + envPath + ':', err.message);
   }
 }
 
 loadEnvFile(path.join(__dirname, '.env'));
 loadEnvFile(path.join(appDir, '.env'));
 
-// 4. Production defaults for pastor.senaycreatives.com
+// 5. Production defaults for pastor.senaycreatives.com
 const defaultDbUrl = 'postgresql://neondb_owner:npg_nW1YXcMSmKE5@ep-soft-frost-atx0u8e5-pooler.c-9.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require';
 const defaultAuthSecret = "opensd23r23f2@#$#@Fsdafasdfs#@#$#F#@FDFDF#fef233[['[.[l[l[[[]]]]]]']";
 
@@ -167,15 +120,6 @@ if (process.env.DATABASE_URL) {
     .replace('@localhost/', '@127.0.0.1/');
 }
 
-// 5. Switch working directory to app/ so relative paths and process.cwd() resolve cleanly
-try {
-  if (fs.existsSync(appDir)) {
-    process.chdir(appDir);
-  }
-} catch (e) {
-  logToFile(appLog, `Could not chdir to app directory: ${e.message}`);
-}
-
 // 6. Boot the Next.js standalone server with startup error boundary
 try {
   const entryCandidates = [
@@ -184,13 +128,12 @@ try {
   ];
   const targetEntry = entryCandidates.find(p => fs.existsSync(p));
   if (!targetEntry) {
-    throw new Error(`Could not find server.js in ${appDir} or ${__dirname}`);
+    throw new Error('Could not find server.js in ./app or .');
   }
-  logToFile(appLog, `Requiring server entrypoint: ${targetEntry}`);
   require(targetEntry);
-  logToFile(appLog, `Server entrypoint loaded successfully`);
 } catch (err) {
-  logToFile(errorLog, `Pastor server startup failed:\n${err.stack || err}`);
-  origConsoleError('[Fatal Pastor Startup Error]', err);
+  const errorLog = path.join(logsDir, 'startup-error.log');
+  fs.writeFileSync(errorLog, '[ ' + new Date().toISOString() + ' ] Pastor server startup failed:\n' + (err.stack || err) + '\n', 'utf8');
+  console.error('[Fatal Pastor Startup Error]', err);
   process.exit(1);
 }
